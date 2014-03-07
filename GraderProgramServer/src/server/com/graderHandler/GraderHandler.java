@@ -1,0 +1,286 @@
+package server.com.graderHandler;
+
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSocket;
+
+import server.com.graderHandler.sql.DatabaseReader;
+import server.com.graderHandler.sql.DatabaseWriter;
+import server.com.graderHandler.sql.IDatabaseReader;
+import server.com.graderHandler.sql.IDatabaseWriter;
+import server.com.gradingProgram.GraderPool;
+import server.com.gradingProgram.GraderSetup;
+import server.com.gradingProgram.IGraderSetup;
+import server.com.gradingProgram.IJSONReader;
+import server.com.gradingProgram.JSONReader;
+import server.utils.ConfigReader;
+import server.utils.IConfigReader;
+import server.utils.ZipReader;
+
+/**
+ * @author Andrew Vitkus
+ *
+ */
+public class GraderHandler extends Thread {
+	private final int BUFFER_SIZE = 4096;
+	
+	private final SSLSocket clientSocket;
+	private String title;
+	private String course;
+	private String onyen;
+	private String uid;
+	private File zip;
+	
+	public GraderHandler(SSLSocket clientSocket) {
+		this.clientSocket = clientSocket;
+	}
+
+	@Override
+	public void run() {
+		try {
+			if (isAuthenticated(readVfykey())) {
+				boolean success = readSubmission();
+				replyBoolean(success);
+				if(success) {
+					try {
+						grade();
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
+					}
+					sendResponse(title);
+					try {
+						postToDatabase();
+					} catch (SQLException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		} catch (MalformedURLException e1) {
+			e1.printStackTrace();
+			return;
+		} catch (IOException e1) {
+			e1.printStackTrace();
+			return;
+		}
+		
+		try {
+			clientSocket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private String readVfykey() throws IOException {
+		DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
+		return dis.readUTF();
+	}
+	
+	private boolean readSubmission() {
+		try {
+			DataInputStream dis = null;
+			FileOutputStream fos = null;
+			try {
+				dis = new DataInputStream(clientSocket.getInputStream());
+				
+				course = dis.readUTF();
+				
+				String assignmentName = dis.readUTF();
+				title = assignmentName;
+				
+				assignmentName = assignmentName.replace(" ", "");
+				
+				//System.out.println("Recieved " + assignmentName + " from client " + clientSocket.getInetAddress().getHostAddress());
+				
+				zip = File.createTempFile(assignmentName, ".zip");
+		        if (!zip.exists()) {
+		        	zip.createNewFile();
+		        }
+		        
+		        long fileSize = dis.readLong();
+	
+		        fos = new FileOutputStream(zip);
+		        byte[] data = new byte[BUFFER_SIZE];
+		        int bytesRead = -1;
+		        while (fileSize > 0 && (bytesRead = dis.read(data)) != -1) {
+		        	fos.write(data, 0, bytesRead);
+		        	fileSize -= bytesRead;
+		        }
+		        
+		        fos.flush();		        
+		        return true;
+			} finally {
+				if (fos != null) {
+					fos.close();
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+	
+	private void sendResponse(String title) throws FileNotFoundException, IOException {
+		IResponseWriter responseWriter = new JSONBasedResponseWriter(Paths.get("graderProgram", "data", "(" + onyen + ")", "Feedback Attachment(s)", "results.json").toFile());
+		responseWriter.setAssignmentName(title);
+		replyUTF(responseWriter.getResponse());
+	}
+	
+	private void replyUTF(String response) {
+		try {
+			//System.out.println(response);
+			DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
+			dos.writeUTF(response);
+			dos.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void replyBoolean(boolean response) {
+		try {
+			DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
+			dos.writeBoolean(response);
+			dos.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private boolean isAuthenticated(String vfykey) throws MalformedURLException, IOException {
+		URL authURL = new URL("https", "onyen.unc.edu", 443, "/cgi-bin/unc_id/authenticator.pl/" + vfykey);
+		HttpsURLConnection auth = (HttpsURLConnection) authURL.openConnection();
+
+		auth.setDoOutput(true);
+		auth.setDoInput(true);
+		auth.getOutputStream().write(42);
+		
+		String response = getResponse(auth);
+		//System.out.println(response);
+		int colon1Loc = response.indexOf(':');
+		int endLnLoc = response.indexOf('\n');
+		String authStatus = "";
+		if (endLnLoc > 0) {
+			authStatus = response.substring(colon1Loc + 2, endLnLoc);
+		} else {
+			authStatus = response.substring(colon1Loc + 2);
+		}
+		//System.out.println(authStatus);
+		if (authStatus.equals("pass")) {
+			onyen = response.substring(0, colon1Loc);
+			int colon2Loc = response.indexOf(':', colon1Loc + 1);
+			uid = response.substring(colon2Loc + 2);
+			
+			//System.out.println(onyen);
+			//System.out.println(uid);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	private static String getResponse(HttpsURLConnection connection) throws IOException {
+		byte[] bytes = new byte[512];
+		BufferedInputStream bis = null;
+		try {
+			bis = new BufferedInputStream(connection.getInputStream());
+			StringBuilder response = new StringBuilder();
+			int in = -1;
+			while((in = bis.read(bytes)) != -1) {
+				response.append(new String(bytes, 0, in));
+			}
+			return response.toString();
+		} finally {
+			if (bis != null) {
+				bis.close();
+			}
+		}
+	}
+	
+	private void postToDatabase() throws SQLException, FileNotFoundException, IOException {
+		IConfigReader config = new ConfigReader("./config/config.properties");
+		String username = config.getString("database.username");
+		String password = config.getString("database.password");
+		String url = config.getString("database.url");
+		if (config.getBoolean("database.ssl")) {
+			url += "?verifyServerCertificate=true&useSSL=true&requireSSL=true";
+		}
+		
+		IDatabaseWriter dw = new DatabaseWriter();
+		dw.connect(username, password, "jdbc:" + url);
+		IDatabaseReader dr = new DatabaseReader();
+		dr.connect(username, password, "jdbc:" + url);
+		
+		dw.writeUser(onyen, uid);
+		
+		String num = title.substring(title.lastIndexOf(' ') + 1, title.length() - 1);
+		String type = title.substring(title.lastIndexOf('(') + 1, title.lastIndexOf(' '));
+		//System.out.println(num);
+		//System.out.println(course);
+		String[] courseParts = course.split("-");
+		int courseID = dr.readCurrentCourseID(courseParts[0], courseParts[1]);
+		String assignmentName = dr.readAssignmentCatalogName(num, Integer.toString(courseID));
+		int assignmentCatalogID = dr.readAssignmentCatalogID(num, assignmentName, type, Integer.toString(courseID));
+		dw.writeAssignment(assignmentCatalogID, Integer.parseInt(uid));
+		
+		int assignmentSubmissionID = dr.readLatestAssignmentSubmissionID(Integer.parseInt(uid), assignmentCatalogID);
+		dw.writeResult(assignmentSubmissionID);
+		
+		File jsonFile = Paths.get("graderProgram", "data", "(" + onyen + ")", "Feedback Attachment(s)", "results.json").toFile();
+		IJSONReader reader = new JSONReader(jsonFile);
+		int resultID = dr.readLatestResultID(assignmentSubmissionID);
+		dw.writeGradingParts(reader.getGrading(), reader.getExtraCredit(), resultID);
+		
+		List<List<String>> testResults = reader.getGradingTests();
+		
+		for(List<String> test : testResults) {
+			String gradingPartName = test.get(0);
+			int gradingPartID = dr.readLatestGradingPartID(gradingPartName, resultID);
+			dw.writeGradingTest(test.get(1), test.get(2), test.get(3), Integer.toString(gradingPartID));
+			int gradingTestID = dr.readLatestGradingTestID(gradingPartID);
+			String[] notes = test.get(4).split(";");
+			if(notes.length > 0 && !notes[0].isEmpty()) {
+				dw.writeTestNotes(notes, gradingTestID);
+			}
+		}
+		
+		dw.writeComments(reader.getComments(), resultID);
+		
+		dr.disconnect();
+		dw.disconnect();
+	}
+	
+	private void grade() throws IOException, InterruptedException {
+		int parenStart = title.indexOf('(');
+		int parenEnd = title.indexOf(')');
+		String assignmentName = title.substring(parenStart + 1, parenEnd);
+		assignmentName = assignmentName.replace(" ", "");
+		IGraderSetup setup = new GraderSetup(onyen, assignmentName);
+		Path submission = setup.setupFiles();
+		ZipReader.read(zip, submission.toFile());
+		//setup.writeConfig();
+		try {
+			Future<String> grader = GraderPool.runGrader(setup.getCommandArgs());
+			while(!grader.isDone());
+			//GraderPool.runGrader("").get();
+			System.out.println(grader.get());
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+}
