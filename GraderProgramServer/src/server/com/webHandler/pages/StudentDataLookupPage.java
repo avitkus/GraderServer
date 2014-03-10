@@ -10,11 +10,19 @@ import java.text.DateFormat;
 import server.com.webHandler.sql.DatabaseReader;
 import server.com.webHandler.sql.IDatabaseReader;
 import server.htmlBuilder.HTMLFile;
+import server.htmlBuilder.attributes.LinkTarget;
 import server.htmlBuilder.body.Body;
+import server.htmlBuilder.body.Division;
 import server.htmlBuilder.body.Header;
 import server.htmlBuilder.body.HorizontalRule;
+import server.htmlBuilder.body.Hyperlink;
 import server.htmlBuilder.body.IBody;
+import server.htmlBuilder.body.IDivision;
 import server.htmlBuilder.body.IHorizontalRule;
+import server.htmlBuilder.body.IHyperlink;
+import server.htmlBuilder.body.ISpan;
+import server.htmlBuilder.body.LineBreak;
+import server.htmlBuilder.body.Span;
 import server.htmlBuilder.body.Text;
 import server.htmlBuilder.doctype.HTML5Doctype;
 import server.htmlBuilder.form.Form;
@@ -54,6 +62,7 @@ import server.utils.IConfigReader;
  */
 public class StudentDataLookupPage extends HTMLFile implements IStudentDataLookupPage {
 	private String onyen = "";
+	private String user = "";
 	private String course = "";
 	private String section = "";
 	private String year = "";
@@ -64,58 +73,72 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 	
 	@Override
 	public void setArgs(String args) {
-		args = args.substring(args.indexOf("\r\n\r\n")+1);
+		String[] temp = args.split("\\s");
+		args = temp[temp.length - 1];
 		args.trim();
-		System.out.println("Args: " + args);
+		//System.out.println("Args: " + args);
 		String[] argList = args.split("&");
 		for(String arg : argList) {
-			if (arg.startsWith("user")) {
+			System.out.println("arg = " + arg);
+			if (arg.startsWith("onyen=")) {
 				String[] argSplit = arg.split("=");
 				if (argSplit.length > 1) {
-					setStudent(argSplit[1]);
+					setOnyen(argSplit[1]);
 				}
-			} else if (arg.startsWith("course")) {
+			} else if (arg.startsWith("user=")) {
 				String[] argSplit = arg.split("=");
 				if (argSplit.length > 1) {
-					setCourse(arg.split("=")[1]);
+					setUser(argSplit[1]);
 				}
-			} else if (arg.startsWith("year")) {
+			} else if (arg.startsWith("course=")) {
 				String[] argSplit = arg.split("=");
 				if (argSplit.length > 1) {
-					setYear(arg.split("=")[1]);
+					setCourse(argSplit[1]);
 				}
-			} else if (arg.startsWith("season")) {
+			} else if (arg.startsWith("year=")) {
 				String[] argSplit = arg.split("=");
 				if (argSplit.length > 1) {
-					setSeason(arg.split("=")[1]);
+					setYear(argSplit[1]);
+				}
+			} else if (arg.startsWith("season=")) {
+				String[] argSplit = arg.split("=");
+				if (argSplit.length > 1) {
+					setSeason(argSplit[1]);
 				}
 			} else if (arg.startsWith("assignment=")) {
 				String[] argSplit = arg.split("=");
 				if (argSplit.length > 1) {
-					setAssignment(arg.split("=")[1]);
+					setAssignment(argSplit[1]);
 				}
 			} else if (arg.startsWith("type=")) {
 				String[] argSplit = arg.split("=");
 				if (argSplit.length > 1) {
-					setType(arg.split("=")[1]);
+					setType(argSplit[1]);
 				}
 			} else if (arg.startsWith("view=")) {
 				String[] argSplit = arg.split("=");
 				if (argSplit.length > 1) {
-					setView(arg.split("=")[1]);
+					setView(argSplit[1]);
 				}
 			} else if (arg.startsWith("section=")) {
 				String[] argSplit = arg.split("=");
 				if (argSplit.length > 1) {
-					setSection(arg.split("=")[1]);
+					setSection(argSplit[1]);
 				}
 			}
 		}
 	}
 	
 	@Override
-	public void setStudent(String onyen) {
+	public void setOnyen(String onyen) {
 		this.onyen = onyen.replace("+", " ");
+		System.out.println(this.onyen);
+	}
+	
+	@Override
+	public void setUser(String user) {
+		this.user = user.replace("+", " ");
+		System.out.println(this.user);
 	}
 
 	@Override
@@ -186,22 +209,61 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 		faviconLink.addLinkAttribtue("type", "image/vnd.microsoft.icon");
 		
 		setHead(new Head(title, charset, faviconLink));
+		
+		addCSSFile("grader.css");
 	}
 	
 	private void buildBody() throws FileNotFoundException, IOException {
 		IBody body = new Body();
-		body.addStyle("width", "90%");
-		body.addStyle("margin-left", "auto");
-		body.addStyle("margin-right", "auto");
-		body.setBGColor("#F8F8F8");
 		
-		body.addElement(new Header("Student Grading Database Lookup", 1));
-		IHorizontalRule headingRule = new HorizontalRule();
-		headingRule.addStyle(IStyleManager.BGCOLOR, IColors.DARK_GRAY);
-		headingRule.addStyle("height", "2px");
-		body.addElement(headingRule);
-		body.addElement(buildForm());
-		body.addElement(buildAssignmentTable());
+		IDivision header = new Division();
+		header.setClass("header-bar");
+		
+		ISpan userInfo = new Span();
+		userInfo.setID("user-info");
+		try {
+			IDatabaseReader dr = new DatabaseReader();
+			IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
+			dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
+			ResultSet admins = dr.getAdminForUser(user);
+			if(admins.first()) {
+				userInfo.addContent(new Text(user + "&ndash;admin"));
+			} else {
+				userInfo.addContent(new Text(user));
+			}
+		} catch (SQLException e){
+			e.printStackTrace();
+		}
+		header.addContent(userInfo);
+		
+		IDivision logOff = new Division();
+		logOff.setID("log-off");
+		IHyperlink logOffLink = new Hyperlink();
+		logOffLink.addContent(new Text("Log Off"));
+		logOffLink.setURL("logoff.php");
+		logOffLink.setTarget(LinkTarget.SELF);
+		logOff.addContent(logOffLink);
+		
+		header.addContent(logOff);
+		
+		header.addContent(new LineBreak());
+		
+		body.addElement(header);
+		
+		IDivision bodyWrapper = new Division();
+		bodyWrapper.setClass("body-wrapper");
+		
+		IDivision title = new Division();
+		title.setClass("title");
+		title.addContent(new Header("Student Grading Database Lookup", 1));
+		bodyWrapper.addContent(title);
+		
+		IDivision content = new Division();
+		content.setClass("content");
+		content.addContent(buildForm());
+		content.addContent(buildAssignmentTable());
+		bodyWrapper.addContent(content);
+		body.addElement(bodyWrapper);
 		
 		setBody(body);
 	}
@@ -416,7 +478,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 									row.addDataPart(new TableData(new Text(courses.getString("name"))));
 								}
 							}
-							if (course != "" && section == "") {
+							if (section == "") {
 								try(ResultSet courses = dr.getCourseForResult(results.getInt("id"))) {
 									courses.first();
 									row.addDataPart(new TableData(new Text(Integer.toString(courses.getInt("section")))));
@@ -486,7 +548,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 								row.addDataPart(courseData);
 							}
 						}
-						if (course != "" && section == "") {
+						if (section == "") {
 							try(ResultSet courses = dr.getCourseForResult(results.getInt("id"))) {
 								courses.first();
 								ITableData sectionData = new TableData(new Text(Integer.toString(courses.getInt("section"))));
@@ -589,7 +651,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 								row.addDataPart(courseData);
 							}
 						}
-						if (course != "" && section == "") {
+						if (section == "") {
 							try(ResultSet courses = dr.getCourseForResult(results.getInt("id"))) {
 								courses.first();
 								ITableData sectionData = new TableData(new Text(Integer.toString(courses.getInt("section"))));
@@ -699,10 +761,19 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 			IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
 			dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
 			form.setMethod("post");
-			//form.setName("assignment_data");
-			//form.setAction("https://127.0.0.1:42422/null");
+			form.setName("assignment_data");
+			form.setAction("https://classroom.cs.unc.edu/~vitkus/grader/display.php");
 			
-			form.addElement(buildDropDown(dr.getUsers(), "user", "onyen", "ONYEN", onyen));
+			try (ResultSet admins = dr.getAdminForUser(user)) {
+				if(admins.first()) {
+					form.addElement(buildDropDown(dr.getUsers(), "onyen", "onyen", "Onyen", onyen));
+				} else {
+					form.addElement(buildDropDown(new String[]{onyen}, "onyen", "Onyen", "onyen"));
+				}
+			} catch (SQLException e){
+				e.printStackTrace();
+			}
+			
 			form.addElement(buildDropDown(dr.getTypes(), "type", "name", "Type", type));
 			form.addElement(buildDropDown(dr.getAssignments(type, course, section, year, season), "assignment", "name", "Name", assignment));
 			form.addElement(buildDropDown(dr.getCourses(year, season), "course", "name", "Course", course));

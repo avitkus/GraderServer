@@ -18,11 +18,15 @@ public class TableRow implements ITableRow {
 	private ArrayList<ITableData> data;
 	private IAttributeManager attrs;
 	private IStyleManager styleManager;
+	private String className;
+	public String id;
 	
 	public TableRow(ITableData... data) {
 		styleManager = new StyleManager();
 		attrs = new AttributeManager();
 		this.data = new ArrayList<>();
+		className = "";
+		id = "";
 		for(ITableData datum : data) {
 			this.data.add(datum);
 		}
@@ -32,6 +36,12 @@ public class TableRow implements ITableRow {
 	public String getText(int indent) {
 		StringBuilder text = new StringBuilder();
 		text.append(Offsetter.indent(indent++)).append("<tr");
+		if (className != "") {
+			text.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			text.append(" id=\"").append(id).append("\"");
+		}
 		text.append(styleManager.getStyleHTML()).append(attrs.getHTML()).append(">\n");
 		for(ITableData row : data) {
 			text.append(row.getText(indent)).append("\n");
@@ -170,5 +180,25 @@ public class TableRow implements ITableRow {
 	@Override
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
+	}
+
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
 	}
 }

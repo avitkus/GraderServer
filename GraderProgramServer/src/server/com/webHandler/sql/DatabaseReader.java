@@ -89,51 +89,51 @@ public class DatabaseReader implements IDatabaseReader {
 			statement.append("SELECT * FROM result WHERE assignment_submission_id IN (SELECT id FROM assignment_submission WHERE user_uid IN (SELECT uid FROM user WHERE onyen = ?))");
 		}
 		if (assignment != null && !assignment.isEmpty()) {
-			count ++;
-			if (statement.length() > 16) {
+			if (count > 0) {
 				statement.append("\nUNION ALL\n");
 			}
+			count ++;
 			statement.append("SELECT * FROM result WHERE assignment_submission_id IN (SELECT id FROM assignment_submission WHERE assignment_catalog_id IN (SELECT id FROM assignment_catalog WHERE name = ?))");
 		}
 		if (type != null && !type.isEmpty()) {
-			count ++;
-			if (statement.length() > 16) {
+			if (count > 0) {
 				statement.append("\nUNION ALL\n");
 			}
+			count ++;
 			statement.append("SELECT * FROM result WHERE assignment_submission_id IN (SELECT id FROM assignment_submission WHERE assignment_catalog_id IN (SELECT id FROM assignment_catalog WHERE assignment_type_id IN (SELECT id FROM assignment_type WHERE name = ?)))");
 		}
 		if (course != null && !course.isEmpty()) {
-			count ++;
-			if (statement.length() > 16) {
+			if (count > 0) {
 				statement.append("\nUNION ALL\n");
 			}
+			count ++;
 			statement.append("SELECT * FROM result WHERE assignment_submission_id IN (SELECT id FROM assignment_submission WHERE assignment_catalog_id IN (SELECT id FROM assignment_catalog WHERE course_id IN (SELECT id FROM course WHERE name = ?)))");
 		}
 		if (section != null && !section.isEmpty()) {
 			count ++;
-			if (statement.length() > 16) {
+			if (count > 0) {
 				statement.append("\nUNION ALL\n");
 			}
 			statement.append("SELECT * FROM result WHERE assignment_submission_id IN (SELECT id FROM assignment_submission WHERE assignment_catalog_id IN (SELECT id FROM assignment_catalog WHERE course_id IN (SELECT id FROM course WHERE section = ?)))");
 		}
 		if (year != null && !year.isEmpty()) {
-			count ++;
-			if (statement.length() > 16) {
+			if (count > 0) {
 				statement.append("\nUNION ALL\n");
 			}
+			count ++;
 			statement.append("SELECT * FROM result WHERE assignment_submission_id IN (SELECT id FROM assignment_submission WHERE assignment_catalog_id IN (SELECT id FROM assignment_catalog WHERE course_id IN (SELECT id FROM course WHERE term_id IN (SELECT id FROM term WHERE year = ?))))");
 		}
 		if (season != null && !season.isEmpty()) {
-			count ++;
-			if (statement.length() > 16) {
+			if (count > 0) {
 				statement.append("\nUNION ALL\n");
 			}
+			count ++;
 			statement.append("SELECT * FROM result WHERE assignment_submission_id IN (SELECT id FROM assignment_submission WHERE assignment_catalog_id IN (SELECT id FROM assignment_catalog WHERE course_id IN (SELECT id FROM course WHERE term_id IN (SELECT id FROM term WHERE season = ?))))");
 		}
 		statement.append("\n) AS result GROUP BY id HAVING count(*) = ").append(count).append(";");
 		if (count == 0) {
 			statement.setLength(0);
-			statement.append("SELECT * FROM result WHERE id = -1");
+			statement.append("SELECT * FROM result");
 		}
 		//System.out.println(statement.toString());
 		PreparedStatement pstmt = connection.prepareStatement(statement.toString());
@@ -242,7 +242,7 @@ public class DatabaseReader implements IDatabaseReader {
 	
 	@Override
 	public ResultSet getAssignments(String type, String course, String section, String year, String season) throws SQLException {
-		System.out.println(type + ", " + course + ", " + section + ", " + year + ", " + season);
+		//System.out.println(type + ", " + course + ", " + section + ", " + year + ", " + season);
 		StringBuilder statement = new StringBuilder();
 		int count = 0;
 		statement.append("SELECT * FROM (\n");
@@ -301,7 +301,7 @@ public class DatabaseReader implements IDatabaseReader {
 		if (season != null && !season.isEmpty()) {
 			pstmt.setString(i, season);
 		}
-		System.out.println(pstmt.toString());
+		//System.out.println(pstmt.toString());
 		return pstmt.executeQuery();
 	}
 	
@@ -401,6 +401,14 @@ public class DatabaseReader implements IDatabaseReader {
 	public ResultSet getTypes() throws SQLException {
 		PreparedStatement pstmt = null;
 		pstmt = connection.prepareStatement("SELECT * FROM assignment_type");
+		return pstmt.executeQuery();
+	}
+	
+	@Override
+	public ResultSet getAdminForUser(String onyen) throws SQLException {
+		PreparedStatement pstmt = null;
+		pstmt = connection.prepareStatement("SELECT * FROM admin WHERE user_uid IN (SELECT uid FROM user WHERE onyen = ?)");
+		pstmt.setString(1, onyen);
 		return pstmt.executeQuery();
 	}
 }

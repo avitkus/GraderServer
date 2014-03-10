@@ -10,15 +10,26 @@ import server.htmlBuilder.util.Offsetter;
  */
 public abstract class Input implements IInput {
 	private IAttributeManager attrs;
+	private String className;
+	public String id;
 	
 	public Input() {
 		attrs = new AttributeManager();
+		className = "";
+		id = "";
 	}
 	
 	@Override
 	public String getText(int depth) {
 		StringBuilder html = new StringBuilder();
-		html.append(Offsetter.indent(depth)).append("<input").append(attrs.getHTML()).append(">");
+		html.append(Offsetter.indent(depth)).append("<input");
+		if (className != "") {
+			html.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			html.append(" id=\"").append(id).append("\"");
+		}
+		html.append(attrs.getHTML()).append(">");
 		return html.toString();
 	}
 
@@ -133,4 +144,23 @@ public abstract class Input implements IInput {
 		return getAttribute("type");
 	}
 
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
+	}
 }

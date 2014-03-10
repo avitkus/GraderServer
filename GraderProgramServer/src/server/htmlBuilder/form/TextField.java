@@ -5,10 +5,7 @@ package server.htmlBuilder.form;
  *
  */
 public class TextField extends Input implements ITextField {
-
-	/**
-	 * 
-	 */
+	
 	public TextField() {
 		super();
 		setType("text");

@@ -1,3 +1,4 @@
+
 package server.htmlBuilder.head;
 
 import server.htmlBuilder.util.AttributeManager;
@@ -12,6 +13,8 @@ public class Title implements ITitle {
 	
 	private String title;
 	private IAttributeManager attrs;
+	private String className;
+	public String id;
 	
 	public Title() {
 		this("");
@@ -19,13 +22,22 @@ public class Title implements ITitle {
 	
 	public Title(String title) {
 		this.title = title;
+		className = "";
+		id = "";
 		attrs = new AttributeManager();
 	}
 	
 	@Override
 	public String getText(int  indent) {
 		StringBuilder text = new StringBuilder();
-		text.append(Offsetter.indent(indent)).append("<title" + attrs.getHTML() + ">").append(title).append("</title>");
+		text.append(Offsetter.indent(indent)).append("<title");
+		if (className != "") {
+			text.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			text.append(" id=\"").append(id).append("\"");
+		}
+		text.append(attrs.getHTML()).append(">").append(title).append("</title>");
 		return text.toString();
 	}
 
@@ -62,5 +74,25 @@ public class Title implements ITitle {
 	@Override
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
+	}
+
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
 	}
 }

@@ -7,7 +7,8 @@ import server.htmlBuilder.IHTMLFile;
  *
  */
 public interface IStudentDataLookupPage extends IHTMLFile {
-	public void setStudent(String onyen);
+	public void setOnyen(String onyen);
+	public void setUser(String onyen);
 	public void setCourse(String name);
 	public void setSection(String section);
 	public void setYear(String year);

@@ -15,16 +15,27 @@ public class Link implements ILink {
 
 	private HashMap<String, String> attributes;
 	private IAttributeManager attrs;
+	private String className;
+	public String id;
 	
 	public Link() {
 		attrs = new AttributeManager();
 		attributes = new HashMap<>();
+		className = "";
+		id = "";
 	}
 	
 	@Override
 	public String getText(int indent) {
 		StringBuilder html = new StringBuilder();
-		html.append(Offsetter.indent(indent)).append("<link").append(attrs.getHTML());
+		html.append(Offsetter.indent(indent)).append("<link");
+		if (className != "") {
+			html.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			html.append(" id=\"").append(id).append("\"");
+		}
+		html.append(attrs.getHTML());
 		for(String[] attr : getLinkAttributes()) {
 			html.append(" ").append(attr[0]).append("=\"").append(attr[1]).append("\"");
 		}
@@ -90,5 +101,25 @@ public class Link implements ILink {
 	@Override
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
+	}
+
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
 	}
 }

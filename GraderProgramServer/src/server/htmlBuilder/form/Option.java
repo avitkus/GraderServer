@@ -11,20 +11,28 @@ import server.htmlBuilder.util.Offsetter;
 public class Option implements IOption {
 	private IAttributeManager attrs;
 	private String text;
+	private String className;
+	public String id;
 	
-	/**
-	 * 
-	 */
 	public Option() {
 		attrs = new AttributeManager();
 		text = "";
+		className = "";
+		id = "";
 	}
 
 	@Override
 	public String getText(int depth) {
 		StringBuilder html = new StringBuilder();
 		
-		html.append(Offsetter.indent(depth)).append("<option").append(attrs.getHTML()).append(">").append(text).append("</option>");
+		html.append(Offsetter.indent(depth)).append("<option");
+		if (className != "") {
+			html.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			html.append(" id=\"").append(id).append("\"");
+		}
+		html.append(attrs.getHTML()).append(">").append(text).append("</option>");
 		
 		return html.toString();
 	}
@@ -112,4 +120,24 @@ public class Option implements IOption {
 		return attrs.getAttributes();
 	}
 
+
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
+	}
 }

@@ -17,9 +17,13 @@ public class Paragraph implements IParagraph {
 	private ArrayList<IBodyElement> contents;
 	private IAttributeManager attrs;
 	private IStyleManager styleManager;
+	private String className;
+	public String id;
 	
 	public Paragraph(IBodyElement... elements) {
 		contents = new ArrayList<>();
+		className = "";
+		id = "";
 		for(IBodyElement element : elements) {
 			contents.add(element);
 		}
@@ -32,6 +36,12 @@ public class Paragraph implements IParagraph {
 	public String getText(int indent) {
 		StringBuilder text = new StringBuilder();
 		text.append(Offsetter.indent(indent++)).append("<p");
+		if (className != "") {
+			text.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			text.append(" id=\"").append(id).append("\"");
+		}
 		text.append(styleManager.getStyleHTML()).append(attrs.getHTML()).append(">\n");
 		for(IBodyElement row : contents) {
 			text.append(row.getText(indent)).append("\n");
@@ -97,5 +107,25 @@ public class Paragraph implements IParagraph {
 	@Override
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
+	}
+	
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
 	}
 }

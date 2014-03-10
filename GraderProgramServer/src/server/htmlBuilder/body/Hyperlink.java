@@ -1,9 +1,11 @@
 package server.htmlBuilder.body;
 
+import java.net.URL;
 import java.util.ArrayList;
 
-import server.htmlBuilder.util.IAttributeManager;
+import server.htmlBuilder.attributes.LinkTarget;
 import server.htmlBuilder.util.AttributeManager;
+import server.htmlBuilder.util.IAttributeManager;
 import server.htmlBuilder.util.IStyleManager;
 import server.htmlBuilder.util.Offsetter;
 import server.htmlBuilder.util.StyleManager;
@@ -12,59 +14,62 @@ import server.htmlBuilder.util.StyleManager;
  * @author Andrew Vitkus
  *
  */
-public class Division implements IDivision {
-
-	private ArrayList<IBodyElement> contents;
-	private IStyleManager styleManager;
-	private IAttributeManager attrs;
-	private String className;
-	public String id;
+public class Hyperlink implements IHyperlink {
 	
-	public Division(IBodyElement... elements) {
-		contents = new ArrayList<>();
-		styleManager = new StyleManager();
-		attrs = new AttributeManager();
+	private IAttributeManager attrs;
+	private IStyleManager styleManager;
+	private String className;
+	private String id;
+	private ArrayList<IBodyElement> contents;
+	private String href;
+	private LinkTarget target;
+	
+	public Hyperlink() {
 		className = "";
 		id = "";
-		
-		for(IBodyElement element : elements) {
-			contents.add(element);
-		}
+		attrs = new AttributeManager();
+		styleManager = new StyleManager();
+		contents = new ArrayList<>();
+		href = "";
+		target = LinkTarget.BLANK;
 	}
+	
 	
 	@Override
 	public String getText(int indent) {
-		StringBuilder html = new StringBuilder();
-		html.append(Offsetter.indent(indent++)).append("<div");
+		StringBuilder text = new StringBuilder();
+		text.append(Offsetter.indent(indent++)).append("<a");
 		if (className != "") {
-			html.append(" class=\"").append(className).append("\"");
+			text.append(" class=\"").append(className).append("\"");
 		}
 		if (id != "") {
-			html.append(" id=\"").append(id).append("\"");
+			text.append(" id=\"").append(id).append("\"");
 		}
-		html.append(styleManager.getStyleHTML());
-		html.append(attrs.getHTML()).append(">\n");
-		for(IBodyElement content : contents) {
-			html.append(content.getText(indent)).append("\n");
+		text.append(styleManager.getStyleHTML()).append(attrs.getHTML());
+		text.append(" href=\"").append(href).append("\"");
+		text.append(" target=\"_").append(target.name().toLowerCase()).append("\">\n");
+		for(IBodyElement element : contents) {
+			text.append(Offsetter.indent(indent)).append(element.getText(indent)).append("\n");
 		}
-		html.append(Offsetter.indent(indent - 1)).append("</div>");
-		return html.toString();
+		text.append(Offsetter.indent(indent - 1)).append("</a>");
+		return text.toString();
 	}
 
 	@Override
 	public String getTagType() {
-		return "span";
-	}
-
-	@Override
-	public void addContent(IBodyElement content) {
-		contents.add(content);
+		return "table header";
 	}
 
 	@Override
 	public IBodyElement[] getContents() {
 		return contents.toArray(new IBodyElement[contents.size()]);
 	}
+	
+	@Override
+	public void addContent(IBodyElement content) {
+		contents.add(content);
+	}
+
 	@Override
 	public void setColor(String color) {
 		addStyle(IStyleManager.COLOR, color);
@@ -86,11 +91,6 @@ public class Division implements IDivision {
 	}
 
 	@Override
-	public void setClass(String className) {
-		addAttribute("class", className);
-	}
-
-	@Override
 	public void addAttribute(String name, String value) {
 		attrs.addAttribute(name, value);
 	}
@@ -109,6 +109,7 @@ public class Division implements IDivision {
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
 	}
+	
 	@Override
 	public void setClassName(String className) {
 		this.className = className;
@@ -127,5 +128,35 @@ public class Division implements IDivision {
 	@Override
 	public String getID() {
 		return id;
+	}
+
+
+	@Override
+	public void setURL(String url) {
+		href = url;
+	}
+
+
+	@Override
+	public void setURL(URL url) {
+		href= url.toString();
+	}
+
+
+	@Override
+	public String getURL() {
+		return href;
+	}
+
+
+	@Override
+	public void setTarget(LinkTarget target) {
+		this.target = target;
+	}
+
+
+	@Override
+	public LinkTarget getTarget() {
+		return target;
 	}
 }

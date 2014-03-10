@@ -14,10 +14,14 @@ public class Head implements IHead {
 
 	private ArrayList<IHeadElement> elements;
 	private IAttributeManager attrs;
+	private String className;
+	public String id;
 	
 	public Head(IHeadElement... elements) {
 		this.elements = new ArrayList<>();
 		attrs = new AttributeManager();
+		className = "";
+		id = "";
 		for(IHeadElement element : elements) {
 			this.elements.add(element);
 		}
@@ -26,7 +30,14 @@ public class Head implements IHead {
 	@Override
 	public String getText(int indent) {
 		StringBuilder text = new StringBuilder();
-		text.append(Offsetter.indent(indent++)).append("<head" + attrs.getHTML() + ">\n");
+		text.append(Offsetter.indent(indent++)).append("<head");
+		if (className != "") {
+			text.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			text.append(" id=\"").append(id).append("\"");
+		}
+		text.append(attrs.getHTML()).append(">\n");
 		for(IHeadElement element : elements) {
 			text.append(element.getText(indent)).append("\n");
 		}
@@ -69,5 +80,25 @@ public class Head implements IHead {
 	@Override
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
+	}
+
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
 	}
 }

@@ -18,11 +18,15 @@ public class TableData implements ITableData {
 	private ArrayList<IBodyElement> contents;
 	private IStyleManager styleManager;
 	private IAttributeManager attrs;
+	private String className;
+	private String id;
 	
 	public TableData(IBodyElement... elements) {
 		styleManager = new StyleManager();
 		attrs = new AttributeManager();
 		contents = new ArrayList<>();
+		className = "";
+		id = "";
 		for(IBodyElement element : elements) {
 			contents.add(element);
 		}
@@ -33,6 +37,12 @@ public class TableData implements ITableData {
 	public String getText(int indent) {
 		StringBuilder text = new StringBuilder();
 		text.append(Offsetter.indent(indent++)).append("<td");
+		if (className != "") {
+			text.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			text.append(" id=\"").append(id).append("\"");
+		}
 		text.append(attrs.getHTML());
 		text.append(styleManager.getStyleHTML()).append(">\n");
 		for(IBodyElement row : contents) {
@@ -164,5 +174,25 @@ public class TableData implements ITableData {
 	@Override
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
+	}
+
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
 	}
 }

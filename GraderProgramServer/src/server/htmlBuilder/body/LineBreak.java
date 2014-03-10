@@ -11,14 +11,18 @@ import server.htmlBuilder.util.Offsetter;
 public class LineBreak implements ILineBreak {
 
 	private IAttributeManager attrs;
+	private String className;
+	public String id;
 	
 	public LineBreak() {
 		attrs = new AttributeManager();
+		className = "";
+		id = "";
 	}
 	
 	@Override
 	public String getText(int depth) {
-		return Offsetter.indent(depth) + "<br" + attrs.getHTML() + ">";
+		return Offsetter.indent(depth) + "<br" + (className == "" ? "" : " class =\""+className+"\"") + (id == "" ? "" : " id=\""+id+"\"") + attrs.getHTML() + ">";
 	}
 
 	@Override
@@ -46,4 +50,23 @@ public class LineBreak implements ILineBreak {
 		return attrs.getAttributes();
 	}
 
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
+	}
 }

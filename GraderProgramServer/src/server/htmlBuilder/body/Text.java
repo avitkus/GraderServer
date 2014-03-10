@@ -21,6 +21,8 @@ public class Text implements IText {
 	private IAttributeManager attrs;
 	private IStyleManager styleManager;
 	private String text;
+	private String className;
+	private String id;
 	
 	public Text() {
 		this("");
@@ -31,6 +33,8 @@ public class Text implements IText {
 		this.textStyles = new ArrayList<>();
 		attrs = new AttributeManager();
 		styleManager = new StyleManager();
+		className = "";
+		id = "";
 		
 		setText(text);
 		setTextStyle(styles);
@@ -84,11 +88,20 @@ public class Text implements IText {
 	public String getText(int indent) {
 		StringBuilder html = new StringBuilder();
 		html.append(Offsetter.indent(indent));
-		if (!styleManager.isEmpty()) {
-			html.append("<span").append(styleManager.getStyleHTML()).append(">");
+		if (!styleManager.isEmpty() || className != "" || id != "") {
+			html.append("<span");
+			if (!styleManager.isEmpty()) {
+				html.append(styleManager.getStyleHTML()).append(">");
+			}
+			if (className != "") {
+				html.append(" class=\"").append(className).append("\"");
+			}
+			if (id != "") {
+				html.append(" id=\"").append(id).append("\"");
+			}
 		}
 		html.append(getStyleOpenTags()).append(text).append(getStyleEndTags());
-		if (!styleManager.isEmpty()) {
+		if (!styleManager.isEmpty() || className != "" || id != "") {
 			html.append("</span>");
 		}
 		for(IText text : textParts) {
@@ -114,7 +127,7 @@ public class Text implements IText {
 	}
 
 	@Override
-	public void addLink(ILink link) {
+	public void addLink(IHyperlink link) {
 		textParts.add(new Text(link.getText(0)));
 	}
 	
@@ -209,5 +222,24 @@ public class Text implements IText {
 	@Override
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
+	}
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
 	}
 }

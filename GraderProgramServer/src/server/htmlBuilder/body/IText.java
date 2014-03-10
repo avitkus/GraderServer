@@ -21,5 +21,5 @@ public interface IText extends IBodyElement, IColorable {
 	public void addTextPart(IText text);
 	public void clearText();
 	
-	public void addLink(ILink link);
+	public void addLink(IHyperlink link);
 }

@@ -15,16 +15,27 @@ import server.htmlBuilder.util.Offsetter;
 public class Form implements IForm {
 	private IAttributeManager attrs;
 	private ArrayList<IBodyElement> elements;
+	private String className;
+	public String id;
 	
 	public Form() {
 		attrs = new AttributeManager();
 		elements = new ArrayList<>();
+		className = "";
+		id = "";
 	}
 	
 	@Override
 	public String getText(int depth) {
 		StringBuilder html = new StringBuilder();
-		html.append(Offsetter.indent(depth++)).append("<form").append(attrs.getHTML()).append(">\n");
+		html.append(Offsetter.indent(depth++)).append("<form");
+		if (className != "") {
+			html.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			html.append(" id=\"").append(id).append("\"");
+		}
+		html.append(attrs.getHTML()).append(">\n");
 		for(IBodyElement element : elements) {
 			html.append(element.getText(depth)).append("\n");
 		}
@@ -117,4 +128,24 @@ public class Form implements IForm {
 		return attrs.getAttributes();
 	}
 
+
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
+	}
 }

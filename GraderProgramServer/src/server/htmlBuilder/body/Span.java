@@ -17,12 +17,16 @@ public class Span implements ISpan {
 	private ArrayList<IBodyElement> contents;
 	private IAttributeManager attrs;
 	private IStyleManager styleManager;
+	private String className;
+	public String id;
 	
 	public Span(IBodyElement... elements) {
 		contents = new ArrayList<>();
 		attrs = new AttributeManager();
 		styleManager = new StyleManager();
-		
+
+		className = "";
+		id = "";
 		for(IBodyElement element : elements) {
 			contents.add(element);
 		}
@@ -32,7 +36,13 @@ public class Span implements ISpan {
 	public String getText(int indent) {
 		StringBuilder html = new StringBuilder();
 		html.append(Offsetter.indent(indent++)).append("<span");
-		html.append(styleManager.getStyleHTML()).append(attrs.getHTML()).append("\">\n");
+		if (className != "") {
+			html.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			html.append(" id=\"").append(id).append("\"");
+		}
+		html.append(styleManager.getStyleHTML()).append(attrs.getHTML()).append(">\n");
 		for(IBodyElement content : contents) {
 			html.append(content.getText(indent)).append("\n");
 		}
@@ -94,4 +104,23 @@ public class Span implements ISpan {
 		return attrs.getAttributes();
 	}
 
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
+	}
 }

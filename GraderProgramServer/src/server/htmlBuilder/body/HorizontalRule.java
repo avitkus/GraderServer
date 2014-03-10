@@ -14,15 +14,19 @@ public class HorizontalRule implements IHorizontalRule {
 
 	private IAttributeManager attrs;
 	private StyleManager styleManager;
+	private String className;
+	public String id;
 	
 	public HorizontalRule() {
 		attrs = new AttributeManager();
 		styleManager = new StyleManager();
+		className = "";
+		id = "";
 	}
 	
 	@Override
 	public String getText(int depth) {
-		return Offsetter.indent(depth) + "<hr" + styleManager.getStyleHTML() + attrs.getHTML() + ">";
+		return Offsetter.indent(depth) + "<hr" + (className == "" ? "" : " class =\""+className+"\"") + (id == "" ? "" : " id=\""+id+"\"") + styleManager.getStyleHTML() + attrs.getHTML() + ">";
 	}
 
 	@Override
@@ -68,5 +72,24 @@ public class HorizontalRule implements IHorizontalRule {
 	@Override
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
+	}
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
 	}
 }

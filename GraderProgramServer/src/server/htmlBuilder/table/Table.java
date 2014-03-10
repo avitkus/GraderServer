@@ -19,11 +19,15 @@ public class Table implements ITable {
 	private IAttributeManager attrs;
 	private IStyleManager styleManager;
 	private String border;
+	private String className;
+	private String id;
 	
 	public Table(ITableRow... rows) {
 		styleManager = new StyleManager();
 		attrs = new AttributeManager();
 		this.rows = new ArrayList<>();
+		className = "";
+		id = "";
 		for(ITableRow row : rows) {
 			addRow(row);
 		}
@@ -34,6 +38,12 @@ public class Table implements ITable {
 	public String getText(int indent) {
 		StringBuilder text = new StringBuilder();
 		text.append(Offsetter.indent(indent++)).append("<table");
+		if (className != "") {
+			text.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			text.append(" id=\"").append(id).append("\"");
+		}
 		if (border != "") {
 			text.append(border);
 		}
@@ -190,5 +200,24 @@ public class Table implements ITable {
 	@Override
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
+	}
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
 	}
 }

@@ -18,11 +18,15 @@ public class OrderedList implements IOrderedList {
 	private ArrayList<IListItem> items;
 	private IAttributeManager attrs;
 	private IStyleManager styleManager;
+	private String className;
+	public String id;
 	
 	public OrderedList(IListItem... items) {
 		styleManager = new StyleManager();
 		attrs = new AttributeManager();
 		this.items = new ArrayList<>();
+		className = "";
+		id = "";
 		for(IListItem item : items) {
 			this.items.add(item);
 		}
@@ -32,6 +36,12 @@ public class OrderedList implements IOrderedList {
 	public String getText(int indent) {
 		StringBuilder text = new StringBuilder();
 		text.append(Offsetter.indent(indent ++)).append("<ol");
+		if (className != "") {
+			text.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			text.append(" id=\"").append(id).append("\"");
+		}
 		text.append(styleManager.getStyleHTML()).append(attrs.getHTML()).append(">\n");
 		for(IListItem item : items) {
 			text.append(item.getText(indent)).append("\n");
@@ -103,5 +113,25 @@ public class OrderedList implements IOrderedList {
 	@Override
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
+	}
+	
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
 	}
 }

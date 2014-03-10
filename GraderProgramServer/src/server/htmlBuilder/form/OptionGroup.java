@@ -13,6 +13,8 @@ import server.htmlBuilder.util.Offsetter;
 public class OptionGroup implements IOptionGroup {
 	private IAttributeManager attrs;
 	private ArrayList<IOption> options;
+	private String className;
+	public String id;
 	
 	/**
 	 * 
@@ -20,13 +22,22 @@ public class OptionGroup implements IOptionGroup {
 	public OptionGroup() {
 		attrs = new AttributeManager();
 		options = new ArrayList<>();
+		className = "";
+		id = "";
 	}
 
 	@Override
 	public String getText(int depth) {
 		StringBuilder html = new StringBuilder();
 		
-		html.append(Offsetter.indent(depth ++)).append("<optgroup").append(attrs.getHTML()).append(">\n");
+		html.append(Offsetter.indent(depth ++)).append("<optgroup");
+		if (className != "") {
+			html.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			html.append(" id=\"").append(id).append("\"");
+		}
+		html.append(attrs.getHTML()).append(">\n");
 		for(IOption option : options) {
 			html.append(option.getText(depth)).append("\n");
 		}
@@ -94,4 +105,24 @@ public class OptionGroup implements IOptionGroup {
 		return attrs.getAttributes();
 	}
 
+
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
+	}
 }

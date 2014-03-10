@@ -40,7 +40,7 @@ public class WebHandler implements Runnable {
 		clientSocket = socket;
 		this.request = request;
 		this.args = args;
-		System.out.println(request + ": " + args);
+		//System.out.println(request + ": " + args);
 	}
 	
 	@Override
@@ -76,7 +76,7 @@ public class WebHandler implements Runnable {
 			String authStatus = ap.checkAuth();
 			if (authStatus != null) {
 				int i = authStatus.indexOf(' ') + 1;
-				System.out.println(authStatus.substring(i, i + 4));
+				//System.out.println(authStatus.substring(i, i + 4));
 				if (authStatus.substring(i, i + 4).equals("pass")) {
 					IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
 					if (clientSocket instanceof SSLSocket) {

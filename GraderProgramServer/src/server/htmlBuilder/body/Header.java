@@ -17,6 +17,8 @@ public class Header implements IHeader {
 	private int level;
 	private String text;
 	private IStyleManager styleManager;
+	private String className;
+	public String id;
 	
 	public Header() {
 		this("", 1);
@@ -30,6 +32,8 @@ public class Header implements IHeader {
 		setLevel(level);
 		attrs = new AttributeManager();
 		styleManager = new StyleManager();
+		className = "";
+		id = "";
 	}
 
 	@Override
@@ -52,6 +56,12 @@ public class Header implements IHeader {
 	public String getText(int depth) {
 		StringBuffer html = new StringBuffer();
 		html.append(Offsetter.indent(depth)).append("<h").append(getLevel());
+		if (className != "") {
+			html.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			html.append(" id=\"").append(id).append("\"");
+		}
 		html.append(styleManager.getStyleHTML()).append(attrs.getHTML()).append(">");
 		html.append(text).append("</h").append(getLevel()).append(">");
 		return html.toString();
@@ -110,5 +120,24 @@ public class Header implements IHeader {
 	@Override
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
+	}
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
 	}
 }

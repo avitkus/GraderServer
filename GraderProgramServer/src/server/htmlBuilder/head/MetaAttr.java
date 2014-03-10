@@ -14,16 +14,27 @@ public class MetaAttr implements IMetaAttr {
 	
 	private ArrayList<String[]> attributes;
 	private IAttributeManager attrs;
+	private String className;
+	public String id;
 	
 	public MetaAttr() {
 		attrs = new AttributeManager();
 		attributes = new ArrayList<>();
+		className = "";
+		id = "";
 	}
 	
 	@Override
 	public String getText(int indent) {
 		StringBuilder text = new StringBuilder();
-		text.append(Offsetter.indent(indent)).append("<meta").append(attrs.getHTML());
+		text.append(Offsetter.indent(indent)).append("<meta");
+		if (className != "") {
+			text.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			text.append(" id=\"").append(id).append("\"");
+		}
+		text.append(attrs.getHTML());
 		for(String[] attr : attributes) {
 			text.append(" ").append(attr[0]).append("=\"").append(attr[1]).append("\"");
 		}
@@ -64,5 +75,25 @@ public class MetaAttr implements IMetaAttr {
 	@Override
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
+	}
+
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
 	}
 }

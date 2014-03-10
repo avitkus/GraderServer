@@ -48,5 +48,7 @@ public interface IDatabaseReader {
 
 	public ResultSet getTerms() throws SQLException;
 	
+	public ResultSet getAdminForUser(String onyen) throws SQLException;
+	
 	public void disconnect() throws SQLException;
 }

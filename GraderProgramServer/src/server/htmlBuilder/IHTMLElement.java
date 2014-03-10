@@ -9,4 +9,8 @@ public interface IHTMLElement extends ITag {
 	public String getAttribute(String name);
 	public String[][] getAttributes();
 	public void removeAttribute(String name);
+	public void setClassName(String className);
+	public String getClassName();
+	public void setID(String id);
+	public String getID();
 }

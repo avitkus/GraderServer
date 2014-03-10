@@ -14,6 +14,8 @@ public class Label implements ILabel {
 	private IFormElement element;
 	private IBodyElement label;
 	private boolean labelFirst;
+	private String className;
+	public String id;
 	
 	/**
 	 * 
@@ -23,12 +25,21 @@ public class Label implements ILabel {
 		element = null;
 		label = null;
 		labelFirst = true;
+		className = "";
+		id = "";
 	}
 
 	@Override
 	public String getText(int depth) {
 		StringBuilder html = new StringBuilder();
-		html.append(Offsetter.indent(depth++)).append("<label").append(attrs.getHTML()).append(">\n");
+		html.append(Offsetter.indent(depth++)).append("<label");
+		if (className != "") {
+			html.append(" class=\"").append(className).append("\"");
+		}
+		if (id != "") {
+			html.append(" id=\"").append(id).append("\"");
+		}
+		html.append(attrs.getHTML()).append(">\n");
 		if (element != null) {
 			if (labelFirst) {
 				if (label != null) {
@@ -129,5 +140,25 @@ public class Label implements ILabel {
 	@Override
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
+	}
+
+	@Override
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public void setID(String id) {
+		this.id = id;
+	}
+
+	@Override
+	public String getID() {
+		return id;
 	}
 }
