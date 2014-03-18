@@ -17,4 +17,5 @@ public interface IStudentDataLookupPage extends IHTMLFile {
 	public void setType(String type);
 	public void setView(String view);
 	public void setArgs(String args);
+	public void setAuth(String auth);
 }

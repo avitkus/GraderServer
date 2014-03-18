@@ -14,11 +14,9 @@ import server.htmlBuilder.attributes.LinkTarget;
 import server.htmlBuilder.body.Body;
 import server.htmlBuilder.body.Division;
 import server.htmlBuilder.body.Header;
-import server.htmlBuilder.body.HorizontalRule;
 import server.htmlBuilder.body.Hyperlink;
 import server.htmlBuilder.body.IBody;
 import server.htmlBuilder.body.IDivision;
-import server.htmlBuilder.body.IHorizontalRule;
 import server.htmlBuilder.body.IHyperlink;
 import server.htmlBuilder.body.ISpan;
 import server.htmlBuilder.body.LineBreak;
@@ -52,7 +50,6 @@ import server.htmlBuilder.table.TableHeader;
 import server.htmlBuilder.table.TableRow;
 import server.htmlBuilder.util.IBorderStyles;
 import server.htmlBuilder.util.IColors;
-import server.htmlBuilder.util.IStyleManager;
 import server.utils.ConfigReader;
 import server.utils.IConfigReader;
 
@@ -61,6 +58,8 @@ import server.utils.IConfigReader;
  *
  */
 public class StudentDataLookupPage extends HTMLFile implements IStudentDataLookupPage {
+	private static final String authKey = "0D72A5330579ED4F4D99ACF09AA1FBF2C92ECC0728017733D04F8A0623FBEDCBA1146C476BC3D322C830C1B5B06446DBEA803F3FB25333BD60AF30A8CB23DC6A";
+	
 	private String onyen = "";
 	private String user = "";
 	private String course = "";
@@ -70,6 +69,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 	private String assignment = "";
 	private String type = "";
 	private String view = "";
+	private String auth = "";
 	
 	@Override
 	public void setArgs(String args) {
@@ -125,6 +125,11 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 				if (argSplit.length > 1) {
 					setSection(argSplit[1]);
 				}
+			} else if (arg.startsWith("auth=")) {
+				String[] argSplit = arg.split("=");
+				if (argSplit.length > 1) {
+					setAuth(argSplit[1]);
+				}
 			}
 		}
 	}
@@ -179,7 +184,15 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 	}
 	
 	@Override
+	public void setAuth(String auth) {
+		this.auth = auth.replace("+", " ");
+	}
+	
+	@Override
 	public String getHTML() {
+		if (user == "" || !auth.equals(authKey)) {
+			return "";
+		}
 		try {
 			setDoctype(new HTML5Doctype());
 			buildParts();
