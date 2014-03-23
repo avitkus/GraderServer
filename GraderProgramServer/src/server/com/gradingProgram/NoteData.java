@@ -9,24 +9,24 @@ import java.util.List;
  *
  */
 public class NoteData implements INoteData {
-	private HashMap<String, HashMap<String, List<String>>> noteData;
+	private final HashMap<String, HashMap<String, List<String>>> noteData;
 	
 	private String currentSection;
 	private String currentPart;
 	
 	public NoteData() {
-		noteData = new HashMap<>();
+		noteData = new HashMap<>(5);
 	}
 	
 	@Override
 	public void addSection(String section) {
-		noteData.put(section, new HashMap<String, List<String>>());
+		noteData.put(section, new HashMap<>(5));
 		currentSection = section;
 	}
 
 	@Override
 	public void addPart(String part) {
-		noteData.get(currentSection).put(part, new ArrayList<String>());
+		noteData.get(currentSection).put(part, new ArrayList<>(5));
 		currentPart = part;
 	}
 
@@ -52,6 +52,7 @@ public class NoteData implements INoteData {
 		return notes.toArray(new String[notes.size()]);
 	}
 
+        @Override
 	public boolean isEmpty() {
 		return noteData.isEmpty();
 	}

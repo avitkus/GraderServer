@@ -6,14 +6,14 @@ import java.sql.SQLException;
  * @author Andrew Vitkus
  *
  */
-public interface IDatabaseReader {
+public interface IDatabaseReader extends AutoCloseable {
 	public void connect(String username, String password, String server) throws SQLException;
 	
 	public int readCurrentCourseID(String name) throws SQLException;
 	public int readCurrentCourseID(String name, String section) throws SQLException;
 	
-	public String readAssignmentCatalogName(String number, String course_id) throws NumberFormatException, SQLException;
-	public String readAssignmentCatalogName(int number, int course_id) throws SQLException;
+	public String readAssignmentCatalogName(String number, String type, String course_id) throws NumberFormatException, SQLException;
+	public String readAssignmentCatalogName(int number, String type, int course_id) throws SQLException;
 	
 	public int readAssignmentCatalogID(String number, String name, String type, String course_id) throws NumberFormatException, SQLException;
 	public int readAssignmentCatalogID(int number, String name, String type, int course_id) throws SQLException;
@@ -35,6 +35,14 @@ public interface IDatabaseReader {
 
 	public int readLatestTestNoteID(String grading_test_id) throws NumberFormatException, SQLException;
 	public int readLatestTestNoteID(int grading_test_id) throws SQLException;
+        
+        public int readCountForSubmission(String assignment_submission_id) throws SQLException, NumberFormatException;
+	public int readCountForSubmission(int assignment_submission_id) throws SQLException;
+	
+        public int readSubmissionLimitForAssignment(String assignment_catalog_id) throws SQLException, NumberFormatException;
+	public int readSubmissionLimitForAssignment(int assignment_catalog_id) throws SQLException;
 	
 	public void disconnect() throws SQLException;
+        
+	public void close() throws SQLException;
 }

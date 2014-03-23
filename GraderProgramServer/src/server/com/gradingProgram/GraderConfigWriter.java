@@ -138,19 +138,19 @@ public class GraderConfigWriter implements IGraderConfigWriter {
 		config.append("project.requirements = ").append(projectRequirements).append("\n");
 		config.append("project.name = ").append(assignmentName).append("\n");
 		config.append("grader.controller = ").append(controller).append("\n");
-		if(path != "") {
+		if(!path.isEmpty()) {
 			config.append("grader.headless.path = ").append(path).append("\n");
 		}
-		if(startOnyen != "") {
+		if(!startOnyen.isEmpty()) {
 			config.append("grader.headless.start = ").append(startOnyen).append("\n");
 		}
-		if(endOnyen != "") {
+		if(!endOnyen.isEmpty()) {
 			config.append("grader.headless.end = ").append(endOnyen).append("\n");
 		}
 		if(logging != 0) {
 			config.append("grader.logger = ").append(getLoggingStr()).append("\n");
 		}
-		if(spreadsheetPath != "") {
+		if(!spreadsheetPath.isEmpty()) {
 			config.append("grader.logger.spreadsheetFilename = ").append(spreadsheetPath).append("\n");
 		}
 		config.append("grader.controller.useFrameworkGUI = ").append(frameworkGUI);
@@ -208,22 +208,22 @@ public class GraderConfigWriter implements IGraderConfigWriter {
 
 	@Override
 	public String[] getCommandArgs() {
-		ArrayList<String> args = new ArrayList<>();
+		ArrayList<String> args = new ArrayList<>(15);
 		args.add("--project-requirements");
 		args.add(projectRequirements);
 		args.add("--project-name ");
 		args.add(assignmentName);
 		args.add("--grader-controller");
 		args.add(controller);
-		if(path != "") {
+		if(!path.isEmpty()) {
 			args.add("--headless-path");
 			args.add(path);
 		}
-		if(startOnyen != "") {
+		if(!startOnyen.isEmpty()) {
 			args.add("--headless-start");
 			args.add(startOnyen);
 		}
-		if(endOnyen != "") {
+		if(!endOnyen.isEmpty()) {
 			args.add("--headless-end");
 			args.add(endOnyen);
 		}

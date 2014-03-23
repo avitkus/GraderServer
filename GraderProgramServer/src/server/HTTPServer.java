@@ -16,8 +16,9 @@ import server.com.webHandler.WebHandler;
  *
  */
 public class HTTPServer implements Runnable {
-	private int COM_PORT;
+	private final int COM_PORT;
 	
+        @Override
 	public void run() {
         final ServerSocket serverSocket;
 		try {

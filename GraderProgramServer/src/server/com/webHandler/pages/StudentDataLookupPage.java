@@ -654,7 +654,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 								row.addDataPart(userData);
 							}
 						}
-						if (course == "") {
+						if (course.isEmpty()) {
 							try(ResultSet courses = dr.getCourseForResult(results.getInt("id"))) {
 								courses.first();
 								ITableData courseData = new TableData(new Text(courses.getString("name")));
@@ -664,7 +664,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 								row.addDataPart(courseData);
 							}
 						}
-						if (section == "") {
+						if (section.isEmpty()) {
 							try(ResultSet courses = dr.getCourseForResult(results.getInt("id"))) {
 								courses.first();
 								ITableData sectionData = new TableData(new Text(Integer.toString(courses.getInt("section"))));
@@ -674,7 +674,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 								row.addDataPart(sectionData);
 							}
 						}
-						if (assignment == "") {
+						if (assignment.isEmpty()) {
 							try(ResultSet assignments = dr.getAssignmentForResult(results.getInt("id"))) {
 								assignments.first();
 								ITableData assignmentData = new TableData(new Text(assignments.getString("name")));
@@ -684,7 +684,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 								row.addDataPart(assignmentData);
 							}
 						}
-						if (type == "") {
+						if (type.isEmpty()) {
 							try(ResultSet assignments = dr.getAssignmentForResult(results.getInt("id"))) {
 								assignments.first();
 								try(ResultSet type = dr.getTypeForAssignment(assignments.getInt("id"))) {
@@ -790,7 +790,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 			form.addElement(buildDropDown(dr.getTypes(), "type", "name", "Type", type));
 			form.addElement(buildDropDown(dr.getAssignments(type, course, section, year, season), "assignment", "name", "Name", assignment));
 			form.addElement(buildDropDown(dr.getCourses(year, season), "course", "name", "Course", course));
-			if (course != "") {
+			if (!course.isEmpty()) {
 				form.addElement(buildDropDown(dr.getSections(course, year, season), "section", "section", "Section", section));
 			}
 			form.addElement(buildDropDown(dr.getTerms(), "year", "year", "Year", year));

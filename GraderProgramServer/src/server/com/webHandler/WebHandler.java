@@ -33,8 +33,8 @@ import server.utils.IConfigReader;
  */
 public class WebHandler implements Runnable {
 	private final Socket clientSocket;
-	private String request;
-	private String args;
+	private final String request;
+	private final String args;
 	
 	public WebHandler(Socket socket, String request, String args) {
 		clientSocket = socket;
@@ -48,7 +48,7 @@ public class WebHandler implements Runnable {
 		try(BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()))) {
 			//System.out.println("okay");
 			BufferedReader sbr = new BufferedReader(new StringReader(getSite()));
-			String line = null;
+			String line;
 			while((line = sbr.readLine()) != null) {
 				//System.out.println(line);
 				bw.write(line);
@@ -153,7 +153,7 @@ public class WebHandler implements Runnable {
 		head.append("Date: ").append(getServerTime()).append("\r\n");
 		head.append("Connection: close\r\n");
 		//head.append("Content-Length: ").append(length).append("\r\n");
-		head.append("Content-Type: "+type+"; charset=UTF-8\r\n");
+		head.append("Content-Type: ").append(type).append("; charset=UTF-8\r\n");
 		head.append("\r\n");
 		
 		return head.toString();

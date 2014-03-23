@@ -6,14 +6,11 @@ import java.sql.SQLException;
  * @author Andrew Vitkus
  *
  */
-public interface IDatabaseWriter {
+public interface IDatabaseWriter extends AutoCloseable {
 	public void connect(String username, String password, String server) throws SQLException;
 	
 	public void writeUser(String ONYEN, String UID) throws NumberFormatException, SQLException;
 	public void writeUser(String ONYEN, int UID) throws SQLException;
-	
-	public void writeAssignment(String number, String course, String userID) throws NumberFormatException, SQLException;
-	public void writeAssignment(int number, int course_id, int userID) throws SQLException;
 	
 	public void writeAssignment(String assignmenCatalogID, String userID) throws NumberFormatException, SQLException;
 	public void writeAssignment(int assignmenCatalogID, int userID) throws SQLException;
@@ -34,4 +31,6 @@ public interface IDatabaseWriter {
 	public void writeTestNotes(String[] notes, int gradingTestID) throws SQLException;
 	
 	public void disconnect() throws SQLException;
+        
+	public void close() throws SQLException;
 }

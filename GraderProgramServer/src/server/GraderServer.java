@@ -25,7 +25,7 @@ import server.utils.TrustManagerUtil;
  */
 public class GraderServer implements Runnable {
 
-	private int COM_PORT;
+	private final int COM_PORT;
 	private static final String SSL_PROTOCOL = "TLSv1.2";
 	private static final String KEYSTORE_FILENAME = "keystore.jks";
 	private static final String KEYSTORE_PASSWORD = "1qaz3edc5tgb";
@@ -36,7 +36,7 @@ public class GraderServer implements Runnable {
 		                               "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
 		                               "TLS_ECDH_ECDSA_WITH_RC4_128_SHA",
 		                               "TLS_ECDH_RSA_WITH_RC4_128_SHA"};
-	private static String[] PROTOCOLS = {"SSLv3",
+	private static final String[] PROTOCOLS = {"SSLv3",
 		                                 "TLSv1",
 		                                 "TLSv1.1",
 		                                 "TLSv1.2"};
@@ -45,6 +45,7 @@ public class GraderServer implements Runnable {
 		COM_PORT = port;
 	}
 	
+        @Override
 	public void run() {
         SSLServerSocket serverSocket = null;
 		try {
