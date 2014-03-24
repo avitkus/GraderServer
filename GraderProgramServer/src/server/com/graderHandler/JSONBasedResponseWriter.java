@@ -6,9 +6,9 @@ import java.io.IOException;
 import server.com.graderHandler.pages.FailPage;
 import server.com.graderHandler.pages.ISuccessPage;
 import server.com.graderHandler.pages.SuccessPage;
-import server.com.gradingProgram.IJSONReader;
-import server.com.gradingProgram.INoteData;
-import server.com.gradingProgram.JSONReader;
+import server.com.graderHandler.util.IJSONReader;
+import server.com.graderHandler.util.INoteData;
+import server.com.graderHandler.util.JSONReader;
 
 /**
  * @author Andrew Vitkus

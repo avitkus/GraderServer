@@ -38,7 +38,7 @@ public class FileTreeManager {
         Files.walkFileTree(p, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (!file.toFile().getName().endsWith(".bak")) {
+                if (!file.toFile().getName().endsWith(".bak") && !file.toFile().getName().equals("grades.csv")) {
                     Files.delete(file);
                 }
                 return FileVisitResult.CONTINUE;

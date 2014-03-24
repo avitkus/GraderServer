@@ -1,6 +1,6 @@
 package server.com.graderHandler.pages;
 
-import server.com.gradingProgram.INoteData;
+import server.com.graderHandler.util.INoteData;
 import server.htmlBuilder.IHTMLFile;
 
 /**

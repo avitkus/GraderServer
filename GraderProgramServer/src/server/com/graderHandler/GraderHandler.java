@@ -19,20 +19,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocket;
 import server.com.graderHandler.sql.DatabaseReader;
 import server.com.graderHandler.sql.DatabaseWriter;
 import server.com.graderHandler.sql.IDatabaseReader;
 import server.com.graderHandler.sql.IDatabaseWriter;
+import server.com.graderHandler.util.CSVGradeWriter;
 import server.com.graderHandler.util.FileTreeManager;
+import server.com.graderHandler.util.GradingData;
+import server.com.graderHandler.util.IGradeWriter;
+import server.com.graderHandler.util.IGradingData;
+import server.com.graderHandler.util.IJSONReader;
+import server.com.graderHandler.util.JSONReader;
 import server.com.gradingProgram.GraderPool;
 import server.com.gradingProgram.GraderSetup;
 import server.com.gradingProgram.IGraderSetup;
-import server.com.gradingProgram.IJSONReader;
-import server.com.gradingProgram.JSONReader;
 import server.utils.ConfigReader;
 import server.utils.IConfigReader;
 import server.utils.ZipReader;
@@ -42,9 +46,9 @@ import server.utils.ZipReader;
  *
  */
 public class GraderHandler extends Thread {
-
+    
     private final int BUFFER_SIZE = 4096;
-
+    
     private final SSLSocket clientSocket;
     private String title;
     private String course;
@@ -56,12 +60,12 @@ public class GraderHandler extends Thread {
     private File zip;
     private Path assignmentRoot;
     private Path submissionPath;
-
+    
     public GraderHandler(SSLSocket clientSocket) {
         this.clientSocket = clientSocket;
         assignmentRoot = Paths.get("graderProgram", "data");
     }
-
+    
     @Override
     public void run() {
         try {
@@ -78,6 +82,18 @@ public class GraderHandler extends Thread {
                     sendResponse(title);
                     try {
                         postToDatabase();
+                        try {
+                            saveToGradesFile();
+                        } catch (FileNotFoundException ex) {
+                            ex.printStackTrace();
+                            Logger.getLogger(GraderHandler.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (InterruptedException ex) {
+                            ex.printStackTrace();
+                            Logger.getLogger(GraderHandler.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (ExecutionException ex) {
+                            ex.printStackTrace();
+                            Logger.getLogger(GraderHandler.class.getName()).log(Level.SEVERE, null, ex);
+                        }
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
@@ -85,47 +101,45 @@ public class GraderHandler extends Thread {
             }
         } catch (MalformedURLException e1) {
             e1.printStackTrace();
-            return;
         } catch (IOException e1) {
             e1.printStackTrace();
-            return;
-        }
-
-        try {
-            clientSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } finally {
+            try {
+                clientSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
-
+    
     private String readVfykey() throws IOException {
         DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
         return dis.readUTF();
     }
-
+    
     private boolean readSubmission() {
         try {
             DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
-
+            
             course = dis.readUTF();
-
+            
             String assignmentName = dis.readUTF();
             title = assignmentName;
-
+            
             int parenStart = title.indexOf('(');
             int parenEnd = title.indexOf(')');
             assignmentName = title.substring(parenStart + 1, parenEnd);
             String assignmentNameRaw = assignmentName;
             assignmentName = assignmentName.replace(" ", "");
-
+            
             String[] courseParts = course.split("-");
-
+            
             int year = Calendar.getInstance().get(Calendar.YEAR);
-
+            
             assignmentRoot = assignmentRoot.resolve(Paths.get(Integer.toString(year), courseParts[0].replace(" ", ""), courseParts[1], assignmentName));
             submissionPath = assignmentRoot.resolve("(" + onyen + ")");
             Path zipPath = submissionPath.resolve(Paths.get("Submission attachment(s)", assignmentName + ".zip"));
-
+            
             IConfigReader config = new ConfigReader("./config/config.properties");
             String username = config.getString("database.username");
             String password = config.getString("database.password");
@@ -150,16 +164,16 @@ public class GraderHandler extends Thread {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
+            
             FileTreeManager.purgeSubmission(submissionPath);
-
+            
             Files.createDirectories(submissionPath.resolve("Submission attachment(s)"));
             zip = zipPath.toFile();
-
+            
             zip.createNewFile();
-
+            
             long fileSize = dis.readLong();
-
+            
             if (!zip.canWrite()) {
                 return false;
             }
@@ -170,7 +184,7 @@ public class GraderHandler extends Thread {
                     fos.write(data, 0, bytesRead);
                     fileSize -= bytesRead;
                 }
-
+                
                 fos.flush();
                 return true;
             } catch (IOException e) {
@@ -182,16 +196,15 @@ public class GraderHandler extends Thread {
             return false;
         }
     }
-
+    
     private void sendResponse(String title) throws FileNotFoundException, IOException {
         IResponseWriter responseWriter = new JSONBasedResponseWriter(submissionPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile());
         responseWriter.setAssignmentName(title);
         replyUTF(responseWriter.getResponse());
     }
-
+    
     private void replyUTF(String response) {
         try {
-            //System.out.println(response);
             DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
             dos.writeUTF(response);
             dos.flush();
@@ -199,7 +212,7 @@ public class GraderHandler extends Thread {
             e.printStackTrace();
         }
     }
-
+    
     private void replyBoolean(boolean response) {
         try {
             DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
@@ -209,11 +222,11 @@ public class GraderHandler extends Thread {
             e.printStackTrace();
         }
     }
-
+    
     private boolean isAuthenticated(String vfykey) throws MalformedURLException, IOException {
         URL authURL = new URL("https", "onyen.unc.edu", 443, "/cgi-bin/unc_id/authenticator.pl/" + vfykey);
         HttpsURLConnection auth = (HttpsURLConnection) authURL.openConnection();
-
+        
         auth.setDoOutput(true);
         auth.setDoInput(true);
         auth.getOutputStream().write(42);
@@ -227,7 +240,7 @@ public class GraderHandler extends Thread {
             String[] lineParts = responseLine.split(": ");
             responseMap.put(lineParts[0], lineParts[1]);
         });
-
+        
         int colon1Loc = response.indexOf(':');
         int endLnLoc = response.indexOf('\n');
         String authStatus;
@@ -248,7 +261,7 @@ public class GraderHandler extends Thread {
             return false;
         }
     }
-
+    
     private String getResponse(HttpsURLConnection connection) throws IOException {
         byte[] bytes = new byte[512];
         try (BufferedInputStream bis = new BufferedInputStream(connection.getInputStream())) {
@@ -260,7 +273,7 @@ public class GraderHandler extends Thread {
             return response.toString();
         }
     }
-
+    
     private void postToDatabase() throws SQLException, FileNotFoundException, IOException {
         IConfigReader config = new ConfigReader("./config/config.properties");
         String username = config.getString("database.username");
@@ -269,12 +282,12 @@ public class GraderHandler extends Thread {
         if (config.getBoolean("database.ssl")) {
             url += "?verifyServerCertificate=true&useSSL=true&requireSSL=true";
         }
-
+        
         try (IDatabaseWriter dw = new DatabaseWriter(username, password, "jdbc:" + url);
                 IDatabaseReader dr = new DatabaseReader(username, password, "jdbc:" + url)) {
-
+            
             dw.writeUser(onyen, uid, pid, first, last);
-
+            
             String num = title.substring(title.lastIndexOf(' ') + 1, title.length() - 1);
             String type = title.substring(title.lastIndexOf('(') + 1, title.lastIndexOf(' '));
             String[] courseParts = course.split("-");
@@ -282,10 +295,10 @@ public class GraderHandler extends Thread {
             String assignmentName = dr.readAssignmentCatalogName(num, type, Integer.toString(courseID));
             int assignmentCatalogID = dr.readAssignmentCatalogID(num, assignmentName, type, Integer.toString(courseID));
             dw.writeAssignment(assignmentCatalogID, Integer.parseInt(uid));
-
+            
             int assignmentSubmissionID = dr.readLatestAssignmentSubmissionID(Integer.parseInt(uid), assignmentCatalogID);
             dw.writeResult(assignmentSubmissionID);
-
+            
             File jsonFile = submissionPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile();
             if (!jsonFile.exists()) {
                 System.err.println("Unable to read json grading output. Not attempting to post to database.");
@@ -293,9 +306,9 @@ public class GraderHandler extends Thread {
                 IJSONReader reader = new JSONReader(jsonFile);
                 int resultID = dr.readLatestResultID(assignmentSubmissionID);
                 dw.writeGradingParts(reader.getGrading(), reader.getExtraCredit(), resultID);
-
+                
                 List<List<String>> testResults = reader.getGradingTests();
-
+                
                 for (List<String> test : testResults) {
                     String gradingPartName = test.get(0);
                     int gradingPartID = dr.readLatestGradingPartID(gradingPartName, resultID);
@@ -306,12 +319,12 @@ public class GraderHandler extends Thread {
                         dw.writeTestNotes(notes, gradingTestID);
                     }
                 }
-
+                
                 dw.writeComments(reader.getComments(), resultID);
             }
         }
     }
-
+    
     private void grade() throws IOException, InterruptedException {
         int parenStart = title.indexOf('(');
         int parenEnd = title.indexOf(')');
@@ -329,5 +342,26 @@ public class GraderHandler extends Thread {
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
+    }
+    
+    private void saveToGradesFile() throws FileNotFoundException, IOException, InterruptedException, ExecutionException {
+        File json = submissionPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile();
+        int points = 0;
+        int possible = 0;
+        if (json.exists()) {
+            IJSONReader reader = new JSONReader(json);
+            String[][] grading = reader.getGrading();
+            for (String[] grade : grading) {
+                points += Integer.parseInt(grade[2]);
+                possible += Integer.parseInt(grade[3]);
+            }
+        }
+        IGradingData gradingData = new GradingData(onyen, first, last, points, possible);
+        int parenStart = title.indexOf('(');
+        int parenEnd = title.indexOf(')');
+        String assignmentName = title.substring(parenStart + 1, parenEnd);
+        
+        IGradeWriter gradeWriter = new CSVGradeWriter(assignmentName, assignmentRoot.resolve("grades.csv"));
+        gradeWriter.write(gradingData);
     }
 }

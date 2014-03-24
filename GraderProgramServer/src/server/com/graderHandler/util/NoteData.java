@@ -1,4 +1,4 @@
-package server.com.gradingProgram;
+package server.com.graderHandler.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package server.com.gradingProgram;
+package server.com.graderHandler.util;
 
 import java.io.BufferedReader;
 import java.io.File;
