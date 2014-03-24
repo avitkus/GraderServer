@@ -25,7 +25,7 @@ public class DatabaseWriter implements IDatabaseWriter {
     }
 
     @Override
-    public void connect(String username, String password, String server) throws SQLException {
+    public final void connect(String username, String password, String server) throws SQLException {
         Properties connectionProps = new Properties();
         connectionProps.put("user", username);
         connectionProps.put("password", password);
@@ -41,22 +41,19 @@ public class DatabaseWriter implements IDatabaseWriter {
     }
 
     @Override
-    public void writeUser(String ONYEN, String UID) throws NumberFormatException, SQLException {
-        writeUser(ONYEN, Integer.parseInt(UID));
+    public void writeUser(String onyen, String uid, String pid, String first_name, String last_name) throws NumberFormatException, SQLException {
+        writeUser(onyen, Integer.parseInt(uid), Integer.parseInt(pid), first_name, last_name);
     }
 
     @Override
-    public void writeUser(String onyen, int uid) throws SQLException {
-        PreparedStatement pstmt = null;
-        try {
-            pstmt = connection.prepareStatement("INSERT IGNORE INTO user (onyen, uid) VALUES (?, ?)");
+    public void writeUser(String onyen, int uid, int pid, String first_name, String last_name) throws SQLException {
+        try (PreparedStatement pstmt = connection.prepareStatement("INSERT IGNORE INTO user (onyen, uid, pid, first_name, last_name) VALUES (?, ?, ?, ?, ?)")) {
             pstmt.setString(1, onyen);
             pstmt.setInt(2, uid);
+            pstmt.setInt(3, pid);
+            pstmt.setString(4, first_name);
+            pstmt.setString(5, last_name);
             pstmt.executeUpdate();
-        } finally {
-            if (pstmt != null) {
-                pstmt.close();
-            }
         }
     }
 
@@ -67,31 +64,19 @@ public class DatabaseWriter implements IDatabaseWriter {
 
     @Override
     public void writeAssignment(int assignmentCatalogID, int userID) throws SQLException {
-        PreparedStatement pstmt = null;
-        try {
-            pstmt = connection.prepareStatement("SELECT * FROM assignment_submission WHERE assignment_catalog_id = ? AND User_UID = ?");
+        try (PreparedStatement pstmt = connection.prepareStatement("SELECT * FROM assignment_submission WHERE assignment_catalog_id = ? AND user_uid = ?")) {
             pstmt.setInt(1, assignmentCatalogID);
             pstmt.setInt(2, userID);
             ResultSet results = pstmt.executeQuery();
-            if (results.last()) {
+            if (results.isBeforeFirst()) {
                 return;
-            }
-        } finally {
-            if (pstmt != null) {
-                pstmt.close();
             }
         }
 
-        pstmt = null;
-        try {
-            pstmt = connection.prepareStatement("INSERT INTO assignment_submission (assignment_catalog_id, user_uid) VALUES (?, ?)");
+        try (PreparedStatement pstmt = connection.prepareStatement("INSERT INTO assignment_submission (assignment_catalog_id, user_uid) VALUES (?, ?)")) {
             pstmt.setInt(1, assignmentCatalogID);
             pstmt.setInt(2, userID);
             pstmt.executeUpdate();
-        } finally {
-            if (pstmt != null) {
-                pstmt.close();
-            }
         }
     }
 
@@ -102,15 +87,9 @@ public class DatabaseWriter implements IDatabaseWriter {
 
     @Override
     public void writeResult(int assignmentSubmissionID) throws SQLException {
-        PreparedStatement pstmt = null;
-        try {
-            pstmt = connection.prepareStatement("INSERT INTO result (assignment_submission_id) VALUES (?)");
+        try (PreparedStatement pstmt = connection.prepareStatement("INSERT INTO result (assignment_submission_id) VALUES (?)")) {
             pstmt.setInt(1, assignmentSubmissionID);
             pstmt.executeUpdate();
-        } finally {
-            if (pstmt != null) {
-                pstmt.close();
-            }
         }
     }
 
@@ -121,30 +100,24 @@ public class DatabaseWriter implements IDatabaseWriter {
 
     @Override
     public void writeComments(String[] comments, int resultID) throws SQLException {
-        PreparedStatement pstmt = null;
-        try {
-            pstmt = connection.prepareStatement("INSERT INTO comment (comment, result_id) VALUES (?, ?)");
+        try (PreparedStatement pstmt = connection.prepareStatement("INSERT INTO comment (comment, result_id) VALUES (?, ?)")) {
             for (String comment : comments) {
                 pstmt.setString(1, comment);
                 pstmt.setInt(2, resultID);
                 pstmt.addBatch();
             }
             pstmt.executeBatch();
-        } finally {
-            if (pstmt != null) {
-                pstmt.close();
-            }
         }
     }
 
+    @Override
     public void writeGradingParts(String[][] grading, Boolean[] extraCredit, String resultID) throws NumberFormatException, SQLException {
         writeGradingParts(grading, extraCredit, Integer.parseInt(resultID));
     }
 
+    @Override
     public void writeGradingParts(String[][] grading, Boolean[] extraCredit, int resultID) throws SQLException {
-        PreparedStatement pstmt = null;
-        try {
-            pstmt = connection.prepareStatement("INSERT INTO grading_part (name, auto_graded_percent, points, possible, extra_credit, result_id) VALUES (?, ?, ?, ?, ?, ?)");
+        try (PreparedStatement pstmt = connection.prepareStatement("INSERT INTO grading_part (name, auto_graded_percent, points, possible, extra_credit, result_id) VALUES (?, ?, ?, ?, ?, ?)")) {
             for (int i = 0; i < grading.length; i++) {
                 String[] part = grading[i];
                 pstmt.setString(1, part[0]);
@@ -156,10 +129,6 @@ public class DatabaseWriter implements IDatabaseWriter {
                 pstmt.addBatch();
             }
             pstmt.executeBatch();
-        } finally {
-            if (pstmt != null) {
-                pstmt.close();
-            }
         }
     }
 
@@ -170,18 +139,12 @@ public class DatabaseWriter implements IDatabaseWriter {
 
     @Override
     public void writeGradingTest(String name, double percent, boolean autoGraded, int gradingPartID) throws SQLException {
-        PreparedStatement pstmt = null;
-        try {
-            pstmt = connection.prepareStatement("INSERT INTO grading_test (name, percent, auto_graded, grading_part_id) VALUES (?, ?, ?, ?)");
+        try (PreparedStatement pstmt = connection.prepareStatement("INSERT INTO grading_test (name, percent, auto_graded, grading_part_id) VALUES (?, ?, ?, ?)")) {
             pstmt.setString(1, name);
             pstmt.setDouble(2, percent);
             pstmt.setBoolean(3, autoGraded);
             pstmt.setInt(4, gradingPartID);
             pstmt.executeUpdate();
-        } finally {
-            if (pstmt != null) {
-                pstmt.close();
-            }
         }
     }
 
@@ -192,19 +155,13 @@ public class DatabaseWriter implements IDatabaseWriter {
 
     @Override
     public void writeTestNotes(String notes[], int gradingTestID) throws SQLException {
-        PreparedStatement pstmt = null;
-        try {
-            pstmt = connection.prepareStatement("INSERT INTO test_note (note, grading_test_id) VALUES (?, ?)");
+        try (PreparedStatement pstmt = connection.prepareStatement("INSERT INTO test_note (note, grading_test_id) VALUES (?, ?)")) {
             for (String note : notes) {
                 pstmt.setString(1, note);
                 pstmt.setInt(2, gradingTestID);
                 pstmt.addBatch();
             }
             pstmt.executeBatch();
-        } finally {
-            if (pstmt != null) {
-                pstmt.close();
-            }
         }
     }
 

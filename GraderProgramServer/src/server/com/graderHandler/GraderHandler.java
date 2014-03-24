@@ -15,9 +15,11 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocket;
@@ -48,6 +50,9 @@ public class GraderHandler extends Thread {
     private String course;
     private String onyen;
     private String uid;
+    private String first;
+    private String last;
+    private String pid;
     private File zip;
     private Path assignmentRoot;
     private Path submissionPath;
@@ -114,13 +119,13 @@ public class GraderHandler extends Thread {
             assignmentName = assignmentName.replace(" ", "");
 
             String[] courseParts = course.split("-");
-            
+
             int year = Calendar.getInstance().get(Calendar.YEAR);
 
             assignmentRoot = assignmentRoot.resolve(Paths.get(Integer.toString(year), courseParts[0].replace(" ", ""), courseParts[1], assignmentName));
             submissionPath = assignmentRoot.resolve("(" + onyen + ")");
             Path zipPath = submissionPath.resolve(Paths.get("Submission attachment(s)", assignmentName + ".zip"));
-            
+
             IConfigReader config = new ConfigReader("./config/config.properties");
             String username = config.getString("database.username");
             String password = config.getString("database.password");
@@ -135,25 +140,22 @@ public class GraderHandler extends Thread {
                 String name = dr.readAssignmentCatalogName(num, type, courseID); // sql name of assignment
                 int assignmentCatalogID = dr.readAssignmentCatalogID(num, name, type, courseID); // sql id from assignment catalog
                 int assignmentSubmissionID = dr.readLatestAssignmentSubmissionID(Integer.parseInt(uid), assignmentCatalogID); // sql id of assignment submissions
-                
+
                 int subCount = dr.readCountForSubmission(assignmentSubmissionID); // number of submissions
                 int subLimit = dr.readSubmissionLimitForAssignment(assignmentCatalogID); // max limit of saved submissions
-                System.out.println(subCount + ", " + subLimit);
-                if (zipPath.toFile().exists() && (subCount < subLimit || subLimit == 0)) { //overwrite old if 
+                if (zipPath.toFile().exists() && (subCount < subLimit || subLimit == 0)) { // write backup of old zip if allowed
                     Path zipBackupPath = submissionPath.resolve(Paths.get("Submission attachment(s)", assignmentName + ".zip.bak"));
-                    System.out.println("Zip path: " + zipPath);
-                    System.out.println("Backup path: " + zipBackupPath);
                     FileTreeManager.backup(zipPath, zipBackupPath);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-            } 
-            
+            }
+
             FileTreeManager.purgeSubmission(submissionPath);
 
             Files.createDirectories(submissionPath.resolve("Submission attachment(s)"));
             zip = zipPath.toFile();
-            
+
             zip.createNewFile();
 
             long fileSize = dis.readLong();
@@ -216,8 +218,16 @@ public class GraderHandler extends Thread {
         auth.setDoInput(true);
         auth.getOutputStream().write(42);
 
+        /*
+         * build a map of the auth server's key-value pair response
+         */
         String response = getResponse(auth);
-        //System.out.println(response);
+        HashMap<String, String> responseMap = new HashMap<>(7);
+        Arrays.stream(response.split("\n")).forEach((String responseLine) -> {
+            String[] lineParts = responseLine.split(": ");
+            responseMap.put(lineParts[0], lineParts[1]);
+        });
+
         int colon1Loc = response.indexOf(':');
         int endLnLoc = response.indexOf('\n');
         String authStatus;
@@ -229,18 +239,17 @@ public class GraderHandler extends Thread {
         //System.out.println(authStatus);
         if (authStatus.equals("pass")) {
             onyen = response.substring(0, colon1Loc);
-            int colon2Loc = response.indexOf(':', colon1Loc + 1);
-            uid = response.substring(colon2Loc + 2);
-
-            //System.out.println(onyen);
-            //System.out.println(uid);
+            uid = responseMap.get("uid");
+            pid = responseMap.get("pid");
+            first = responseMap.get("givenName");
+            last = responseMap.get("uncPreferredSurname");
             return true;
         } else {
             return false;
         }
     }
 
-    private static String getResponse(HttpsURLConnection connection) throws IOException {
+    private String getResponse(HttpsURLConnection connection) throws IOException {
         byte[] bytes = new byte[512];
         try (BufferedInputStream bis = new BufferedInputStream(connection.getInputStream())) {
             StringBuilder response = new StringBuilder();
@@ -261,50 +270,46 @@ public class GraderHandler extends Thread {
             url += "?verifyServerCertificate=true&useSSL=true&requireSSL=true";
         }
 
-        IDatabaseWriter dw = new DatabaseWriter();
-        dw.connect(username, password, "jdbc:" + url);
-        IDatabaseReader dr = new DatabaseReader();
-        dr.connect(username, password, "jdbc:" + url);
+        try (IDatabaseWriter dw = new DatabaseWriter(username, password, "jdbc:" + url);
+                IDatabaseReader dr = new DatabaseReader(username, password, "jdbc:" + url)) {
 
-        dw.writeUser(onyen, uid);
+            dw.writeUser(onyen, uid, pid, first, last);
 
-        String num = title.substring(title.lastIndexOf(' ') + 1, title.length() - 1);
-        String type = title.substring(title.lastIndexOf('(') + 1, title.lastIndexOf(' '));
-        String[] courseParts = course.split("-");
-        int courseID = dr.readCurrentCourseID(courseParts[0], courseParts[1]);
-        String assignmentName = dr.readAssignmentCatalogName(num, type, Integer.toString(courseID));
-        int assignmentCatalogID = dr.readAssignmentCatalogID(num, assignmentName, type, Integer.toString(courseID));
-        dw.writeAssignment(assignmentCatalogID, Integer.parseInt(uid));
+            String num = title.substring(title.lastIndexOf(' ') + 1, title.length() - 1);
+            String type = title.substring(title.lastIndexOf('(') + 1, title.lastIndexOf(' '));
+            String[] courseParts = course.split("-");
+            int courseID = dr.readCurrentCourseID(courseParts[0], courseParts[1]);
+            String assignmentName = dr.readAssignmentCatalogName(num, type, Integer.toString(courseID));
+            int assignmentCatalogID = dr.readAssignmentCatalogID(num, assignmentName, type, Integer.toString(courseID));
+            dw.writeAssignment(assignmentCatalogID, Integer.parseInt(uid));
 
-        int assignmentSubmissionID = dr.readLatestAssignmentSubmissionID(Integer.parseInt(uid), assignmentCatalogID);
-        dw.writeResult(assignmentSubmissionID);
+            int assignmentSubmissionID = dr.readLatestAssignmentSubmissionID(Integer.parseInt(uid), assignmentCatalogID);
+            dw.writeResult(assignmentSubmissionID);
 
-        File jsonFile = submissionPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile();
-        if (!jsonFile.exists()) {
-            System.err.println("Unable to read json grading output. Not attempting to post to database.");
-        } else {
-            IJSONReader reader = new JSONReader(jsonFile);
-            int resultID = dr.readLatestResultID(assignmentSubmissionID);
-            dw.writeGradingParts(reader.getGrading(), reader.getExtraCredit(), resultID);
+            File jsonFile = submissionPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile();
+            if (!jsonFile.exists()) {
+                System.err.println("Unable to read json grading output. Not attempting to post to database.");
+            } else {
+                IJSONReader reader = new JSONReader(jsonFile);
+                int resultID = dr.readLatestResultID(assignmentSubmissionID);
+                dw.writeGradingParts(reader.getGrading(), reader.getExtraCredit(), resultID);
 
-            List<List<String>> testResults = reader.getGradingTests();
+                List<List<String>> testResults = reader.getGradingTests();
 
-            for (List<String> test : testResults) {
-                String gradingPartName = test.get(0);
-                int gradingPartID = dr.readLatestGradingPartID(gradingPartName, resultID);
-                dw.writeGradingTest(test.get(1), test.get(2), test.get(3), Integer.toString(gradingPartID));
-                int gradingTestID = dr.readLatestGradingTestID(gradingPartID);
-                String[] notes = test.get(4).split(";");
-                if (notes.length > 0 && !notes[0].isEmpty()) {
-                    dw.writeTestNotes(notes, gradingTestID);
+                for (List<String> test : testResults) {
+                    String gradingPartName = test.get(0);
+                    int gradingPartID = dr.readLatestGradingPartID(gradingPartName, resultID);
+                    dw.writeGradingTest(test.get(1), test.get(2), test.get(3), Integer.toString(gradingPartID));
+                    int gradingTestID = dr.readLatestGradingTestID(gradingPartID);
+                    String[] notes = test.get(4).split(";");
+                    if (notes.length > 0 && !notes[0].isEmpty()) {
+                        dw.writeTestNotes(notes, gradingTestID);
+                    }
                 }
+
+                dw.writeComments(reader.getComments(), resultID);
             }
-
-            dw.writeComments(reader.getComments(), resultID);
         }
-
-        dr.disconnect();
-        dw.disconnect();
     }
 
     private void grade() throws IOException, InterruptedException {
@@ -318,10 +323,9 @@ public class GraderHandler extends Thread {
         //setup.writeConfig();
         try {
             Future<String> grader = GraderPool.runGrader(setup.getCommandArgs());
-            //while (!grader.isDone());
-            //GraderPool.runGrader("").get();
+
+            // print grader program output with *** before each line
             Arrays.stream(grader.get().split("\n")).forEach((line) -> System.out.println("*** " + line));
-            //System.out.println(grader.get());
         } catch (ExecutionException e) {
             e.printStackTrace();
         }

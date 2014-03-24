@@ -21,7 +21,7 @@ public class DatabaseReader implements IDatabaseReader {
     }
 
     @Override
-    public void connect(String username, String password, String server) throws SQLException {
+    public final void connect(String username, String password, String server) throws SQLException {
         Properties connectionProps = new Properties();
         connectionProps.put("user", username);
         connectionProps.put("password", password);
@@ -34,23 +34,17 @@ public class DatabaseReader implements IDatabaseReader {
     }
 
     @Override
-    public int readCurrentCourseID(String name) throws SQLException {
-        try (PreparedStatement pstmt = connection.prepareStatement("SELECT * FROM course WHERE name = ? && term_id IN (SELECT id FROM term WHERE current = TRUE)")) {
-            pstmt.setString(1, name);
-            ResultSet results = pstmt.executeQuery();
-            results.next();
-            return results.getInt("id");
-        }
-    }
-
-    @Override
     public int readCurrentCourseID(String name, String section) throws SQLException {
         try (PreparedStatement pstmt = connection.prepareStatement("SELECT * FROM course WHERE name = ? && section = ? && term_id IN (SELECT id FROM term WHERE current = TRUE)")) {
             pstmt.setString(1, name);
             pstmt.setString(2, section);
             ResultSet results = pstmt.executeQuery();
-            results.next();
-            return results.getInt("id");
+            if (results.isBeforeFirst()) {
+                results.first();
+                return results.getInt("id");
+            } else {
+                return 0;
+            }
         }
     }
 
@@ -65,10 +59,13 @@ public class DatabaseReader implements IDatabaseReader {
             pstmt.setInt(1, number);
             pstmt.setInt(2, course_id);
             pstmt.setString(3, type);
-            System.out.println("query = " + pstmt.toString());
             ResultSet results = pstmt.executeQuery();
-            results.first();
-            return results.getString("name");
+            if (results.isBeforeFirst()) {
+                results.first();
+                return results.getString("name");
+            } else {
+                return "";
+            }
         }
     }
 
@@ -85,8 +82,12 @@ public class DatabaseReader implements IDatabaseReader {
             pstmt.setInt(3, course_id);
             pstmt.setString(4, type);
             ResultSet results = pstmt.executeQuery();
-            results.next();
-            return results.getInt("id");
+            if (results.isBeforeFirst()) {
+                results.first();
+                return results.getInt("id");
+            } else {
+                return 0;
+            }
         }
     }
 
@@ -101,8 +102,12 @@ public class DatabaseReader implements IDatabaseReader {
             pstmt.setInt(1, user_uid);
             pstmt.setInt(2, assignment_catalog_id);
             ResultSet results = pstmt.executeQuery();
-            results.next();
-            return results.getInt("id");
+            if (results.isBeforeFirst()) {
+                results.first();
+                return results.getInt("id");
+            } else {
+                return 0;
+            }
         }
     }
 
@@ -116,8 +121,12 @@ public class DatabaseReader implements IDatabaseReader {
         try (PreparedStatement pstmt = connection.prepareStatement("SELECT * FROM result WHERE assignment_submission_id = ?")) {
             pstmt.setInt(1, assignment_submission_id);
             ResultSet results = pstmt.executeQuery();
-            results.last();
-            return results.getInt("id");
+            if (results.isBeforeFirst()) {
+                results.last();
+                return results.getInt("id");
+            } else {
+                return 0;
+            }
         }
     }
 
@@ -131,8 +140,12 @@ public class DatabaseReader implements IDatabaseReader {
         try (PreparedStatement pstmt = connection.prepareStatement("SELECT * FROM grading_part WHERE result_id = ?")) {
             pstmt.setInt(1, result_id);
             ResultSet results = pstmt.executeQuery();
-            results.last();
-            return results.getInt("id");
+            if (results.isBeforeFirst()) {
+                results.last();
+                return results.getInt("id");
+            } else {
+                return 0;
+            }
         }
     }
 
@@ -147,8 +160,12 @@ public class DatabaseReader implements IDatabaseReader {
             pstmt.setString(1, name);
             pstmt.setInt(2, result_id);
             ResultSet results = pstmt.executeQuery();
-            results.last();
-            return results.getInt("id");
+            if (results.isBeforeFirst()) {
+                results.last();
+                return results.getInt("id");
+            } else {
+                return 0;
+            }
         }
     }
 
@@ -162,8 +179,12 @@ public class DatabaseReader implements IDatabaseReader {
         try (PreparedStatement pstmt = connection.prepareStatement("SELECT * FROM grading_test WHERE grading_part_id = ?")) {
             pstmt.setInt(1, grading_part_id);
             ResultSet results = pstmt.executeQuery();
-            results.last();
-            return results.getInt("id");
+            if (results.isBeforeFirst()) {
+                results.last();
+                return results.getInt("id");
+            } else {
+                return 0;
+            }
         }
     }
 
@@ -177,8 +198,12 @@ public class DatabaseReader implements IDatabaseReader {
         try (PreparedStatement pstmt = connection.prepareStatement("SELECT * FROM test_note WHERE grading_test_id = ?")) {
             pstmt.setInt(1, grading_test_id);
             ResultSet results = pstmt.executeQuery();
-            results.last();
-            return results.getInt("id");
+            if (results.isBeforeFirst()) {
+                results.last();
+                return results.getInt("id");
+            } else {
+                return 0;
+            }
         }
     }
 
@@ -199,8 +224,12 @@ public class DatabaseReader implements IDatabaseReader {
         try (PreparedStatement pstmt = connection.prepareStatement("SELECT COUNT(*) AS count FROM result WHERE assignment_submission_id = ?")) {
             pstmt.setInt(1, assignment_submission_id);
             ResultSet results = pstmt.executeQuery();
-            results.last();
-            return results.getInt("count");
+            if (results.isBeforeFirst()) {
+                results.last();
+                return results.getInt("count");
+            } else {
+                return 0;
+            }
         }
     }
 

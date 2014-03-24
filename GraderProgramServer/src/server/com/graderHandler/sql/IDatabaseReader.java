@@ -9,7 +9,6 @@ import java.sql.SQLException;
 public interface IDatabaseReader extends AutoCloseable {
 	public void connect(String username, String password, String server) throws SQLException;
 	
-	public int readCurrentCourseID(String name) throws SQLException;
 	public int readCurrentCourseID(String name, String section) throws SQLException;
 	
 	public String readAssignmentCatalogName(String number, String type, String course_id) throws NumberFormatException, SQLException;

@@ -11,9 +11,6 @@ import java.nio.file.Paths;
  *
  */
 public class GraderSetup implements IGraderSetup {
-
-    private static final String FILE_SEPARATOR = System.getProperty("file.separator");
-
     private final String onyen;
     private final String assignmentName;
     private final Path root;
@@ -58,7 +55,6 @@ public class GraderSetup implements IGraderSetup {
         cw.setProjectRequirements("gradingTools." + Character.toLowerCase(assignmentName.charAt(0)) + assignmentName.substring(1) + "." + Character.toUpperCase(assignmentName.charAt(0)) + assignmentName.substring(1) + "ProjectRequirements");
         cw.setController(IGraderConfigWriter.HEADLESS_GRADING_MANAGER);
         cw.setPath(root.subpath(1, root.getNameCount()).toString());
-        System.out.println("path = " + root.subpath(1, root.getNameCount()).toString() + ".zip");
         cw.setStartOnyen(onyen);
         cw.setEndOnyen(onyen);
         cw.setLogging(IGraderConfigWriter.FEEDBACK_JSON, IGraderConfigWriter.FEEDBACK_TXT, IGraderConfigWriter.LOCAL_JSON, IGraderConfigWriter.LOCAL_TXT);

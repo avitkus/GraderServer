@@ -9,8 +9,8 @@ import java.sql.SQLException;
 public interface IDatabaseWriter extends AutoCloseable {
 	public void connect(String username, String password, String server) throws SQLException;
 	
-	public void writeUser(String ONYEN, String UID) throws NumberFormatException, SQLException;
-	public void writeUser(String ONYEN, int UID) throws SQLException;
+	public void writeUser(String onyen, String uid, String pid, String first_name, String last_name) throws NumberFormatException, SQLException;
+	public void writeUser(String onyen, int uid, int pid, String first_name, String last_name) throws SQLException;
 	
 	public void writeAssignment(String assignmenCatalogID, String userID) throws NumberFormatException, SQLException;
 	public void writeAssignment(int assignmenCatalogID, int userID) throws SQLException;
