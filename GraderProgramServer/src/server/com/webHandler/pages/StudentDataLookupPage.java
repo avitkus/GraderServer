@@ -9,6 +9,7 @@ import java.text.DateFormat;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import server.com.webHandler.pages.parts.StudentDataNavBar;
 import server.com.webHandler.sql.DatabaseReader;
 import server.com.webHandler.sql.IDatabaseReader;
 import server.htmlBuilder.HTMLFile;
@@ -30,11 +31,11 @@ import server.htmlBuilder.form.IForm;
 import server.htmlBuilder.form.ILabel;
 import server.htmlBuilder.form.IOption;
 import server.htmlBuilder.form.ISelect;
-import server.htmlBuilder.form.ISubmitButton;
 import server.htmlBuilder.form.Label;
 import server.htmlBuilder.form.Option;
 import server.htmlBuilder.form.Select;
-import server.htmlBuilder.form.SubmitButton;
+import server.htmlBuilder.form.input.ISubmitButton;
+import server.htmlBuilder.form.input.SubmitButton;
 import server.htmlBuilder.head.Head;
 import server.htmlBuilder.head.ILink;
 import server.htmlBuilder.head.IMetaAttr;
@@ -50,11 +51,8 @@ import server.htmlBuilder.table.Table;
 import server.htmlBuilder.table.TableData;
 import server.htmlBuilder.table.TableHeader;
 import server.htmlBuilder.table.TableRow;
-import server.htmlBuilder.util.IBorderStyles;
-import server.htmlBuilder.util.IColors;
 import server.utils.ConfigReader;
 import server.utils.IConfigReader;
-
 
 public class StudentDataLookupPage extends HTMLFile implements IStudentDataLookupPage {
 
@@ -309,6 +307,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 
         IDivision content = new Division();
         content.setClass("content");
+        content.addContent(new StudentDataNavBar());
         content.addContent(buildForm());
         content.addContent(buildAssignmentTable());
         bodyWrapper.addContent(content);
@@ -317,19 +316,17 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
         setBody(body);
     }
 
+
     private ITable buildAssignmentTable() throws FileNotFoundException, IOException {
         IDatabaseReader dr = new DatabaseReader();
         ITable table = new Table();
+        table.setClassName("center");
         ResultSet results = null;
         try {
             IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
             dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
 
-            table.setBorder(2, IBorderStyles.SOLID);
-            table.addStyle("width", "100%");
-
             ITableRow headerRow = new TableRow();
-            headerRow.setBGColor("#B0B0B0");
 
             if (view.isEmpty() || view.equals("Submissions")) {
                 if (doShowOnyen() && onyen.isEmpty()) {
@@ -442,7 +439,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
                 if (view.isEmpty() || view.equals("Submissions")) {
                     ITableRow row = new TableRow();
                     if (i % 2 == 1) {
-                        row.setBGColor(IColors.LIGHT_GRAY);
+                        row.setClassName("highlight-row");
                     }
                     if (doShowOnyen() && onyen.isEmpty()) {
                         try (ResultSet users = dr.getUserForResult(results.getInt("id"))) {
@@ -508,12 +505,12 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
                         int dateSpan = comments.getRow();
                         comments.beforeFirst();
                         date.setRowSpan(dateSpan);
-                        date.setBGColor("#F8F8F8");
+                        date.setClassName("highlight-row");
                         row.addDataPart(date);
                         int commentNum = 1;
                         while (comments.next()) {
                             if (i % 2 == 1) {
-                                row.setBGColor(IColors.LIGHT_GRAY);
+                                row.setClassName("highlight-row");
                             }
                             if (doShowOnyen() && onyen.isEmpty()) {
                                 try (ResultSet users = dr.getUserForResult(results.getInt("id"))) {
@@ -573,7 +570,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
                         if (dateSpan > 1) {
                             date.setRowSpan(dateSpan);
                         }
-                        date.setBGColor("#F8F8F8");
+                        date.setClassName("highlight-row");
                         grading.beforeFirst();
                         if (doShowOnyen() && onyen.isEmpty()) {
                             try (ResultSet users = dr.getUserForResult(results.getInt("id"))) {
@@ -582,7 +579,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
                                 if (dateSpan > 1) {
                                     userData.setRowSpan(dateSpan);
                                 }
-                                userData.setBGColor("#F8F8F8");
+                                userData.setClassName("highlight-row");
                                 row.addDataPart(userData);
                             }
                         }
@@ -593,7 +590,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
                                 if (dateSpan > 1) {
                                     courseData.setRowSpan(dateSpan);
                                 }
-                                courseData.setBGColor("#F8F8F8");
+                                courseData.setClassName("highlight-row");
                                 row.addDataPart(courseData);
                             }
                         }
@@ -604,7 +601,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
                                 if (dateSpan > 1) {
                                     sectionData.setRowSpan(dateSpan);
                                 }
-                                sectionData.setBGColor("#F8F8F8");
+                                sectionData.setClassName("highlight-row");
                                 row.addDataPart(sectionData);
                             }
                         }
@@ -615,7 +612,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
                                 if (dateSpan > 1) {
                                     assignmentData.setRowSpan(dateSpan);
                                 }
-                                assignmentData.setBGColor("#F8F8F8");
+                                assignmentData.setClassName("highlight-row");
                                 row.addDataPart(assignmentData);
                             }
                         }
@@ -628,14 +625,14 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
                                     if (dateSpan > 1) {
                                         typeData.setRowSpan(dateSpan);
                                     }
-                                    typeData.setBGColor("#F8F8F8");
+                                    typeData.setClassName("highlight-row");
                                     row.addDataPart(typeData);
                                 }
                             }
                         }
                         row.addDataPart(date);
                         while (grading.next()) {
-                            row.setBGColor(IColors.LIGHT_GRAY);
+                            row.setClassName("highlight-row");
 
                             row.addDataPart(new TableData(new Text(grading.getString("name"))));
                             row.addDataPart(new TableData(new Text("" + grading.getInt("points"))));
@@ -774,7 +771,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
                                         }
                                         while (notes.next()) {
                                             if (i % 2 == 1) {
-                                                row.setBGColor(IColors.LIGHT_GRAY);
+                                                row.setClassName("highlight-row");
                                             }
                                             row.addDataPart(new TableData(new Text(notes.getString("note"))));
                                             table.addRow(row);
@@ -811,7 +808,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
             dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
             form.setMethod("post");
             form.setName("assignment_data");
-            form.setAction("https://classroom.cs.unc.edu/~vitkus/grader/display.php");
+            form.setAction("https://classroom.cs.unc.edu/~vitkus/grader/lookup.php");
 
             if (isAdmin && showAdminOnyen) {
                 form.addElement(buildDropDown(dr.getUsers(), "onyen", "onyen", "Onyen", onyen));

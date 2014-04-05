@@ -1,7 +1,7 @@
 package server.htmlBuilder.table;
 
-import server.htmlBuilder.util.ITableStylable;
 import server.htmlBuilder.body.IBodyElement;
+import server.htmlBuilder.util.ITableStylable;
 
 /**
  * @author Andrew Vitkus

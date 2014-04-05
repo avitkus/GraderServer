@@ -1,4 +1,4 @@
-package server.htmlBuilder.form;
+package server.htmlBuilder.form.input;
 
 /**
  * @author Andrew Vitkus

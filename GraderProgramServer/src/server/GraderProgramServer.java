@@ -25,7 +25,7 @@ public class GraderProgramServer {
             fh.setFormatter(new XMLFormatter());
             serverLog.addHandler(fh);
         } catch (IOException | SecurityException ex) {
-            Logger.getLogger(GraderProgramServer.class.getName()).log(Level.FINER, "Failed to add log file writer.", ex);
+            LOG.log(Level.FINE, "Failed to add log file writer.", ex);
         }
     }
     /**

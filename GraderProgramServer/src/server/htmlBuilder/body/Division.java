@@ -14,11 +14,11 @@ import server.htmlBuilder.util.StyleManager;
  */
 public class Division implements IDivision {
 
-	private ArrayList<IBodyElement> contents;
-	private IStyleManager styleManager;
-	private IAttributeManager attrs;
+	private final ArrayList<IBodyElement> contents;
+	private final IStyleManager styleManager;
+	private final IAttributeManager attrs;
 	private String className;
-	public String id;
+	private String id;
 	
 	public Division(IBodyElement... elements) {
 		contents = new ArrayList<>();

@@ -1,8 +1,7 @@
 package server.htmlBuilder.body;
 
-import java.net.URL;
 import java.util.ArrayList;
-import server.htmlBuilder.attributes.LinkTarget;
+import java.util.Arrays;
 import server.htmlBuilder.util.AttributeManager;
 import server.htmlBuilder.util.IAttributeManager;
 import server.htmlBuilder.util.IStyleManager;
@@ -13,62 +12,57 @@ import server.htmlBuilder.util.StyleManager;
  * @author Andrew Vitkus
  *
  */
-public class Hyperlink implements IHyperlink {
-	
-	private final IAttributeManager attrs;
+public class Navigation implements INavigation {
+
+	private final ArrayList<IBodyElement> contents;
 	private final IStyleManager styleManager;
+	private final IAttributeManager attrs;
 	private String className;
 	private String id;
-	private final ArrayList<IBodyElement> contents;
-	private String href;
-	private LinkTarget target;
 	
-	public Hyperlink() {
+	public Navigation(IBodyElement... elements) {
+		contents = new ArrayList<>(5);
+		styleManager = new StyleManager();
+		attrs = new AttributeManager();
 		className = "";
 		id = "";
-		attrs = new AttributeManager();
-		styleManager = new StyleManager();
-		contents = new ArrayList<>(1);
-		href = "";
-		target = LinkTarget.BLANK;
+		
+                contents.addAll(Arrays.asList(elements));
 	}
-	
 	
 	@Override
 	public String getText(int indent) {
-		StringBuilder text = new StringBuilder(20);
-		text.append(Offsetter.indent(indent++)).append("<a");
+		StringBuilder html = new StringBuilder(50);
+		html.append(Offsetter.indent(indent++)).append("<nav");
 		if (!className.isEmpty()) {
-			text.append(" class=\"").append(className).append("\"");
+			html.append(" class=\"").append(className).append("\"");
 		}
 		if (!id.isEmpty()) {
-			text.append(" id=\"").append(id).append("\"");
+			html.append(" id=\"").append(id).append("\"");
 		}
-		text.append(styleManager.getStyleHTML()).append(attrs.getHTML());
-		text.append(" href=\"").append(href).append("\"");
-		text.append(" target=\"_").append(target.name().toLowerCase()).append("\">\n");
-		for(IBodyElement element : contents) {
-			text.append(element.getText(indent)).append("\n");
+		html.append(styleManager.getStyleHTML());
+		html.append(attrs.getHTML()).append(">\n");
+		for(IBodyElement content : contents) {
+			html.append(content.getText(indent)).append("\n");
 		}
-		text.append(Offsetter.indent(indent - 1)).append("</a>");
-		return text.toString();
+		html.append(Offsetter.indent(indent - 1)).append("</nav>");
+		return html.toString();
 	}
 
 	@Override
 	public String getTagType() {
-		return "hyperlink";
+		return "nav";
+	}
+
+	@Override
+	public void addContent(IBodyElement content) {
+		contents.add(content);
 	}
 
 	@Override
 	public IBodyElement[] getContents() {
 		return contents.toArray(new IBodyElement[contents.size()]);
 	}
-	
-	@Override
-	public void addContent(IBodyElement content) {
-		contents.add(content);
-	}
-
 	@Override
 	public void setColor(String color) {
 		addStyle(IStyleManager.COLOR, color);
@@ -90,6 +84,11 @@ public class Hyperlink implements IHyperlink {
 	}
 
 	@Override
+	public void setClass(String className) {
+		addAttribute("class", className);
+	}
+
+	@Override
 	public void addAttribute(String name, String value) {
 		attrs.addAttribute(name, value);
 	}
@@ -108,7 +107,6 @@ public class Hyperlink implements IHyperlink {
 	public String[][] getAttributes() {
 		return attrs.getAttributes();
 	}
-	
 	@Override
 	public void setClassName(String className) {
 		this.className = className;
@@ -127,35 +125,5 @@ public class Hyperlink implements IHyperlink {
 	@Override
 	public String getID() {
 		return id;
-	}
-
-
-	@Override
-	public void setURL(String url) {
-		href = url;
-	}
-
-
-	@Override
-	public String getURL() {
-            return href;
-        }
-
-
-	@Override
-	public void setURL(URL url) {
-            href= url.toString();
-        }
-
-
-	@Override
-	public void setTarget(LinkTarget target) {
-		this.target = target;
-	}
-
-
-	@Override
-	public LinkTarget getTarget() {
-		return target;
 	}
 }

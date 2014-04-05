@@ -20,8 +20,12 @@ import server.com.webHandler.pages.AuthPage;
 import server.com.webHandler.pages.IAuthPage;
 import server.com.webHandler.pages.INotFoundPage;
 import server.com.webHandler.pages.IStudentDataLookupPage;
+import server.com.webHandler.pages.IStudentDataStatisticsPage;
+import server.com.webHandler.pages.IUploadPage;
 import server.com.webHandler.pages.NotFoundPage;
 import server.com.webHandler.pages.StudentDataLookupPage;
+import server.com.webHandler.pages.StudentDataStatisticsPage;
+import server.com.webHandler.pages.UploadPage;
 import server.com.webHandler.pages.css.AuthCSS;
 import server.com.webHandler.pages.css.IAuthCSS;
 import server.utils.ConfigReader;
@@ -97,7 +101,7 @@ public class WebHandler implements Runnable {
 
             String html = ap.getHTML();
             return buildHeader(200, html.length()) + html;
-        } else if (request.contains(" /index.html")) {
+        } else if (request.contains(" /lookup.html")) {
             //System.out.println(request);
             IStudentDataLookupPage sdlp = new StudentDataLookupPage();
             if (args != null) {
@@ -105,6 +109,24 @@ public class WebHandler implements Runnable {
             }
 
             String html = sdlp.getHTML();
+            return buildHeader(200, html.length()) + html;
+        } else if (request.contains(" /stats.html")) {
+            //System.out.println(request);
+            IStudentDataStatisticsPage sdsp = new StudentDataStatisticsPage();
+            if (args != null) {
+                sdsp.setArgs(args);
+            }
+
+            String html = sdsp.getHTML();
+            return buildHeader(200, html.length()) + html;
+        } else if (request.contains(" /upload.html")) {
+            //System.out.println(request);
+            IUploadPage up = new UploadPage();
+            if (args != null) {
+                up.setArgs(args);
+            }
+
+            String html = up.getHTML();
             return buildHeader(200, html.length()) + html;
         } else if (request.contains(" /auth.css")) {
             //System.out.println(request);

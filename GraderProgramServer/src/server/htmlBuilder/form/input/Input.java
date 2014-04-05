@@ -1,4 +1,4 @@
-package server.htmlBuilder.form;
+package server.htmlBuilder.form.input;
 
 import server.htmlBuilder.util.AttributeManager;
 import server.htmlBuilder.util.IAttributeManager;
