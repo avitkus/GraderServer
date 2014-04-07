@@ -5,7 +5,6 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 import java.util.logging.XMLFormatter;
 import server.utils.ConfigReader;
 import server.utils.IConfigReader;
@@ -15,13 +14,13 @@ public class GraderProgramServer {
     private static final Logger LOG = Logger.getLogger(GraderProgramServer.class.getName());
 
     static {
-        Logger serverLog = Logger.getLogger("server.com");
+        Logger serverLog = Logger.getLogger("");
         ConsoleHandler ch = new ConsoleHandler();
         ch.setLevel(Level.FINE);
         serverLog.addHandler(ch);
         try {
-            FileHandler fh = new FileHandler("logs/server-%g.%u.log", 0, 10);
-            fh.setLevel(Level.FINEST);
+            FileHandler fh = new FileHandler("logs/server-%g.%u.log", 0, 50);
+            fh.setLevel(Level.ALL);
             fh.setFormatter(new XMLFormatter());
             serverLog.addHandler(fh);
         } catch (IOException | SecurityException ex) {

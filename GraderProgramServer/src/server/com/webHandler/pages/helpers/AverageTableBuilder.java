@@ -35,54 +35,74 @@ public class AverageTableBuilder implements ITableBuilder {
 
     private ITable buildTable() {
         ITable table = new Table();
+        table.setClassName("center");
         try {
             if (results == null || !results.isBeforeFirst()) {
                 return table;
             }
             ITableRow headerRow = new TableRow();
-            headerRow.addDataPart(new TableHeader(new Text("Grading Name")));
-            headerRow.addDataPart(new TableHeader(new Text("Test Name")));
-            headerRow.addDataPart(new TableHeader(new Text("Average Percent Correct")));
+            headerRow.addDataPart(new TableHeader(new Text("Name")));
+            headerRow.addDataPart(new TableHeader(new Text("Average Points")));
+            headerRow.addDataPart(new TableHeader(new Text("Possible")));
+            headerRow.addDataPart(new TableHeader(new Text("Extra Credit")));
             headerRow.addDataPart(new TableHeader(new Text("Autograded")));
             
             table.addRow(headerRow);
 
             LinkedHashMap<String, GradingData> gradingMap = new LinkedHashMap<>(10);
             results.beforeFirst();
-            System.out.println("um...");
             while (results.next()) {
                 int resultID = results.getInt("id");
-                System.out.println(resultID);
-                GradingData data = new GradingData();
-                System.out.println("grading name = " + results.getString("name"));
                 try (ResultSet grading = dr.getGradingForResult(resultID)) {
-                    int gradingID = grading.getInt("id");
-                    try (ResultSet tests = dr.getTestsForGrading(gradingID)) {
-                        String name = tests.getString("name");
-                        double percent = tests.getDouble("percent");
-                        boolean autoGraded = tests.getBoolean("auto_graded");
-                        data.addTestData(name, percent, autoGraded);
-                        System.out.println("test name = " + name);
+                    while(grading.next()) {
+                        String gradingName = grading.getString("name");
+                        int gradingID = grading.getInt("id");
+                        int pointsPossible = grading.getInt("possible");
+                        double autoGradedPercentage = grading.getDouble("auto_graded_percent");
+                        boolean extraCredit = grading.getBoolean("extra_credit");
+                        
+                        GradingData data;
+                        if (gradingMap.containsKey(gradingName)) {
+                            data = gradingMap.get(gradingName);
+                        } else {
+                            data = new GradingData(pointsPossible, autoGradedPercentage, extraCredit);
+                            gradingMap.put(gradingName, data);
+                        }
+                        
+                        data.addPointTotal(grading.getInt("points"));
+                        try (ResultSet tests = dr.getTestsForGrading(gradingID)) {
+                            while(tests.next()) {
+                                String name = tests.getString("name");
+                                double percent = tests.getDouble("percent");
+                                boolean autoGraded = tests.getBoolean("auto_graded");
+                                data.addTestData(name, percent, autoGraded);
+                            }  
+                        }
                     }
                 }
-                gradingMap.put(results.getString("name"), data);
             }
 
             for (Entry<String, GradingData> gradingEntry : gradingMap.entrySet()) {
-                Entry<String, GradingData.TestData>[] testEntries = gradingEntry.getValue().getData();
+                GradingData gradingData = gradingEntry.getValue();
                 ITableRow row = new TableRow();
-                ITableData grading = new TableData();
-                int gradeSpan = testEntries.length;
-                if (gradeSpan > 1) {
-                    grading.setRowSpan(gradeSpan);
-                }
-                grading.addContent(new Text(gradingEntry.getKey()));
-                row.addDataPart(grading);
-                for (Entry<String, GradingData.TestData> testEntry : gradingEntry.getValue().getData()) {
+                row.setClassName("highlight-row");
+                row.addDataPart(new TableData(new Text(gradingEntry.getKey())));
+                row.addDataPart(new TableData(new Text(roundToString(gradingData.getAveragePoints(), 2))));
+                row.addDataPart(new TableData(new Text(Integer.toString(gradingData.getPossible()))));
+                row.addDataPart(new TableData(new Text(gradingData.isExtraCredit() ? "Yes" : "No")));
+                row.addDataPart(new TableData(new Text(roundToString(gradingData.getPercentAutograded(), 2) + "%")));
+                
+                table.addRow(row);
+                row = new TableRow();
+                
+                for (Entry<String, GradingData.TestData> testEntry : gradingData.getData()) {
                     GradingData.TestData test = testEntry.getValue();
                     row.addDataPart(new TableData(new Text(testEntry.getKey())));
-                    row.addDataPart(new TableData(new Text("" + test.getAverageScore())));
-                    row.addDataPart(new TableData(new Text("" + test.getAutoGrade())));
+                    ITableData avgScore = new TableData(new Text(roundToString(test.getAverageScore(), 2) + "%"));
+                    avgScore.setColSpan(2);
+                    row.addDataPart(avgScore);
+                    row.addDataPart(new TableData());
+                    row.addDataPart(new TableData(new Text(test.getAutoGrade() ? "Yes" : "No")));
 
                     table.addRow(row);
                     row = new TableRow();
@@ -97,9 +117,24 @@ public class AverageTableBuilder implements ITableBuilder {
     private class GradingData {
 
         private final LinkedHashMap<String, TestData> testMap;
+        private int points;
+        private int count;
+        private final int possible;
+        private final double autoGraded;
+        private final boolean extraCredit;
 
-        GradingData() {
+        GradingData(int possible, double autoGraded, boolean extraCredit) {
             testMap = new LinkedHashMap<>(5);
+            points = 0;
+            count = 0;
+            this.possible = possible;
+            this.autoGraded = autoGraded;
+            this.extraCredit = extraCredit;
+        }
+        
+        void addPointTotal(int points) {
+            this.points += points;
+            count++;
         }
 
         void addTestData(String name, double percent, boolean autoGraded) {
@@ -114,6 +149,22 @@ public class AverageTableBuilder implements ITableBuilder {
         Entry<String, TestData>[] getData() {
             Set<Entry<String, TestData>> testSet = testMap.entrySet();
             return (Entry<String, TestData>[]) testMap.entrySet().toArray(new Entry[testSet.size()]);
+        }
+        
+        double getAveragePoints() {
+            return ((double)points)/count;
+        }
+        
+        int getPossible() {
+            return possible;
+        }
+        
+        double getPercentAutograded() {
+            return autoGraded;
+        }
+        
+        boolean isExtraCredit() {
+            return extraCredit;
         }
 
         class TestData {
@@ -141,5 +192,18 @@ public class AverageTableBuilder implements ITableBuilder {
                 return autoGraded;
             }
         }
+    }
+    
+    private String roundToString(double d, int precision) {
+        d = round(d, precision);
+        return Double.toString(d);
+    }
+    
+    private double round(double d, int precision) {
+        int mult = (int)Math.pow(10, precision);
+        d = d * mult;
+        d = Math.round(d);
+        d = d / mult;
+        return d;
     }
 }

@@ -22,8 +22,10 @@ import server.htmlBuilder.body.Hyperlink;
 import server.htmlBuilder.body.IBody;
 import server.htmlBuilder.body.IDivision;
 import server.htmlBuilder.body.IHyperlink;
+import server.htmlBuilder.body.IParagraph;
 import server.htmlBuilder.body.ISpan;
 import server.htmlBuilder.body.LineBreak;
+import server.htmlBuilder.body.Paragraph;
 import server.htmlBuilder.body.Span;
 import server.htmlBuilder.body.Text;
 import server.htmlBuilder.doctype.HTML5Doctype;
@@ -288,14 +290,20 @@ public class StudentDataStatisticsPage extends HTMLFile implements IStudentDataS
         content.setClass("content");
         content.addContent(new StudentDataNavBar());
         content.addContent(buildForm());
-        content.addContent(buildAssignmentTable());
+        if (!assignment.isEmpty() && !course.isEmpty()) {
+            content.addContent(buildAverageTable());
+        } else {
+            IParagraph p = new Paragraph();
+            p.addContent(new Text("Please select an assignment name and course to view statistics."));
+            content.addContent(p);
+        }
         bodyWrapper.addContent(content);
         body.addElement(bodyWrapper);
 
         setBody(body);
     }
 
-    private ITable buildAssignmentTable() throws FileNotFoundException, IOException {
+    private ITable buildAverageTable() throws FileNotFoundException, IOException {
         IDatabaseReader dr = new DatabaseReader();
         ITable table = new Table();
         table.setClassName("center");
@@ -304,7 +312,7 @@ public class StudentDataStatisticsPage extends HTMLFile implements IStudentDataS
             IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
             dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
 
-            if (assignment != null && course != null) {
+            if (!assignment.isEmpty() && !course.isEmpty()) {
                 results = dr.getResultsForAll(doShowOnyen() ? onyen : "", assignment, type, course, section, year, season);
             }
 
@@ -340,8 +348,8 @@ public class StudentDataStatisticsPage extends HTMLFile implements IStudentDataS
             }
 
             form.addElement(buildDropDown(dr.getTypes(), "type", "name", "Type", type));
-            form.addElement(buildDropDown(dr.getAssignments(type, course, section, year, season), "assignment", "name", "Name", assignment));
-            form.addElement(buildDropDown(dr.getCourses(year, season), "course", "name", "Course", course));
+            form.addElement(buildDropDown(dr.getAssignments(type, course, section, year, season), "assignment", "name", "Name", assignment, true));
+            form.addElement(buildDropDown(dr.getCourses(year, season), "course", "name", "Course", course, true));
             if (!course.isEmpty()) {
                 form.addElement(buildDropDown(dr.getSections(course, year, season), "section", "section", "Section", section));
             }
