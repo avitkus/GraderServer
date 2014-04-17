@@ -4,12 +4,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- * Creates and parses Sakai timestamps.
- *
- * @author Andrew Vitkus
- * @author Prasun Dewan
- */
+
 public class SakaiDateUtil {
 
     /**
@@ -59,5 +54,8 @@ public class SakaiDateUtil {
     public static String getTimeStamp(ZonedDateTime dateTime) {
         ZonedDateTime time = dateTime.withZoneSameLocal(ZoneId.of("GMT"));
         return time.format(DateTimeFormatter.ofPattern("yyyyMMddhhmmssSSS"));
+    }
+
+    private SakaiDateUtil() {
     }
 }

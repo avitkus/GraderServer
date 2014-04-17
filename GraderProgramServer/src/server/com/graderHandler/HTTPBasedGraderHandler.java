@@ -42,8 +42,8 @@ import server.utils.IConfigReader;
 import server.utils.ZipReader;
 
 
-public class GraderHandler extends Thread {
-    private static final Logger LOG = Logger.getLogger(GraderHandler.class.getName());
+public class HTTPBasedGraderHandler extends Thread {
+    private static final Logger LOG = Logger.getLogger(HTTPBasedGraderHandler.class.getName());
 
     private final int BUFFER_SIZE = 4096;
 
@@ -59,7 +59,7 @@ public class GraderHandler extends Thread {
     private Path assignmentRoot;
     private Path submissionPath;
 
-    public GraderHandler(SSLSocket clientSocket) {
+    public HTTPBasedGraderHandler(SSLSocket clientSocket) {
         this.clientSocket = clientSocket;
         assignmentRoot = Paths.get("graderProgram", "data");
     }

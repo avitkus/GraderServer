@@ -15,7 +15,7 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
-import server.com.graderHandler.GraderHandler;
+import server.com.graderHandler.JavaBasedGraderHandler;
 import server.utils.KeyManagerUtil;
 import server.utils.TrustManagerUtil;
 
@@ -55,7 +55,7 @@ public class GraderServer implements Runnable {
 
         while (true) {
             try {
-                new Thread(new GraderHandler((SSLSocket) serverSocket.accept())).start();
+                new Thread(new JavaBasedGraderHandler((SSLSocket) serverSocket.accept())).start();
             } catch (SocketException e) {
                 LOG.log(Level.FINER, null, e);
             } catch (IOException e) {
