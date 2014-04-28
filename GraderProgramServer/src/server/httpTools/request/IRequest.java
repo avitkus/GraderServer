@@ -6,8 +6,10 @@ package server.httpTools.request;
  */
 public interface IRequest {
     
+    public IRequestLine getRequestInfo();
     public IRequestHeaders getHeaders();
     public IRequestBody getBody();
-    public IRequestInfo getRequestInfo();
     public boolean isMultipart();
+    
+    public String getRequest();
 }

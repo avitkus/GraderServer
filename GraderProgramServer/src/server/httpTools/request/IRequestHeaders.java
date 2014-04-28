@@ -8,4 +8,5 @@ import java.util.Map;
  */
 public interface IRequestHeaders {
     public Map<String, String[]> getHeaders();
+    public String getHeader();
 }

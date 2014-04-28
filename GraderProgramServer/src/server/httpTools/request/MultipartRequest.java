@@ -6,17 +6,17 @@ package server.httpTools.request;
  */
 public class MultipartRequest implements IRequest {
 
-    public static MultipartRequest getInstance(IRequestInfo info, IRequestHeaders headers, IRequestBody body) {
+    public static MultipartRequest getInstance(IRequestLine info, IRequestHeaders headers, IRequestBody body) {
         return new MultipartRequest(info, headers, body);
     }
     private final IRequestHeaders headers;
     private final IRequestBody body;
-    private final IRequestInfo info;
+    private final IRequestLine requestLine;
     
-    protected MultipartRequest(IRequestInfo info, IRequestHeaders headers, IRequestBody body) {
+    protected MultipartRequest(IRequestLine requestLine, IRequestHeaders headers, IRequestBody body) {
         this.headers = headers;
         this.body = body;
-        this.info = info;
+        this.requestLine = requestLine;
     }
     
     @Override
@@ -30,13 +30,24 @@ public class MultipartRequest implements IRequest {
     }
     
     @Override
-    public IRequestInfo getRequestInfo() {
-        return info;
+    public IRequestLine getRequestInfo() {
+        return requestLine;
     }
 
     @Override
     public boolean isMultipart() {
         return true;
+    }
+
+    @Override
+    public String getRequest() {
+        StringBuilder request = new StringBuilder(200);
+        
+        request.append(requestLine.getRequestLine());
+        request.append(headers.getHeader()).append("\r\n");
+        request.append(body.getBody());
+        
+        return request.toString();
     }
     
 }

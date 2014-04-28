@@ -62,7 +62,7 @@ public class MultipartRequestFactory {
         
         IRequestHeaders header = headerFactory.getHeaders();
         
-        IRequestInfo request = new RequestInfo(version, method, resource);
+        IRequestLine request = new RequestLine(version, method, resource);
         
         return MultipartRequest.getInstance(request, header, body);
     }
