@@ -15,6 +15,7 @@ public abstract class MultipartRequestBody implements IRequestBody {
         contents = new ArrayList<>(2);
         boundary = "";
         bodyText = "";
+        init();
     }
     
     protected abstract void init();

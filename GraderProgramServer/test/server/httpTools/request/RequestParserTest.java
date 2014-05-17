@@ -34,11 +34,10 @@ public class RequestParserTest {
 
     /**
      * Test of parse method, of class RequestParser.
-     * @throws server.httpTools.request.MalformedRequestException
+     * @throws server.httpTools.request.exceptions.MalformedRequestException
      */
     @Test
     public void testParse() throws MalformedRequestException {
-        System.out.println("parse");
         String request = "POST /cgi-bin/qtest HTTP/1.1\r\n"
                 + "Host: aram\r\n" + "Accept-Language: en\r\n"
                 + "Accept-Encoding: gzip\r\n"
@@ -67,7 +66,6 @@ public class RequestParserTest {
         RequestParser instance = new RequestParser();
         IRequest result = instance.parse(request);
         System.out.println(result.getRequest());
-        //assertEquals(request, result.getRequest());
     }
 
 }

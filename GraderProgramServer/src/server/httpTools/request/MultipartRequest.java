@@ -44,7 +44,7 @@ public class MultipartRequest implements IRequest {
         StringBuilder request = new StringBuilder(200);
         
         request.append(requestLine.getRequestLine());
-        request.append(headers.getHeader()).append("\r\n");
+        request.append(headers.getHeader());
         request.append(body.getBody());
         
         return request.toString();

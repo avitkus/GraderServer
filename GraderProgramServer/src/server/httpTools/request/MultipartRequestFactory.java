@@ -1,8 +1,8 @@
 package server.httpTools.request;
 
 import server.httpTools.util.HTTPMethod;
-import server.httpTools.util.HTTPVersion;
 import static server.httpTools.util.HTTPMethod.POST;
+import server.httpTools.util.HTTPVersion;
 import static server.httpTools.util.HTTPVersion.HTTP11;
 
 /**
@@ -55,9 +55,23 @@ public class MultipartRequestFactory {
      }
     
     public IRequest buildRequest() {
+        IRequest request;
+        if (headerFactory.getHeaders().getHeaders().containsKey("Content-Type")) {
+            request = buildRequest("", false);
+        } else {
+            request = buildRequest("multipart/mixed", true);
+        }
+        return request;
+    }
+    
+    public IRequest buildRequest(String type, boolean addTypeHeader) {
         IRequestBody body = bodyFactory.buildBody(boundary);
         
-        headerFactory.addHeader("Content-Type", "multipart/mixed", "boundary=" + boundary);
+        if (addTypeHeader) {
+            headerFactory.addHeader("Content-Type", type, "boundary=" + boundary);
+        } else {
+            headerFactory.addHeader("Content-Type", "boundary=" + boundary);
+        }
         headerFactory.addHeader("Content-Length", Integer.toString(body.getBody().length()));
         
         IRequestHeaders header = headerFactory.getHeaders();

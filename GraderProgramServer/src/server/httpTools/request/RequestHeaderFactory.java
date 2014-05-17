@@ -6,10 +6,15 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 
 /**
- *
+ * Not thread safe
+ * 
  * @author Andrew Vitkus
  */
 public class RequestHeaderFactory {
+
+    public static RequestHeaderFactory getDefault() {
+        return new RequestHeaderFactory();
+    }
 
     private final Map<String, String[]> headerMap;
 
@@ -18,12 +23,14 @@ public class RequestHeaderFactory {
     }
 
     public void addHeader(String key, String... value) {
-        headerMap.merge(key, value, (old, add) -> {
-            LinkedHashSet<String> vals = new LinkedHashSet<>(2);
-            vals.addAll(asList(old));
-            vals.addAll(asList(add));
-            return vals.toArray(new String[vals.size()]);
-        });
+        synchronized(headerMap) {
+            headerMap.merge(key, value, (old, add) -> {
+                LinkedHashSet<String> vals = new LinkedHashSet<>(2);
+                vals.addAll(asList(old));
+                vals.addAll(asList(add));
+                return vals.toArray(new String[vals.size()]);
+            });
+        }
     }
     
     public IRequestHeaders getHeaders() {
@@ -31,12 +38,11 @@ public class RequestHeaderFactory {
 
             @Override
             protected void init() {
-                headers.putAll(headerMap);
+                synchronized(headerMap) {
+                    headers.putAll(headerMap);
+                }
             }
         };
     }
     
-    public static RequestHeaderFactory getDefault() {
-        return new RequestHeaderFactory();
-    }
 }
