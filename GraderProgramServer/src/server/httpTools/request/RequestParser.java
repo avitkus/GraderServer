@@ -46,6 +46,7 @@ public class RequestParser implements IRequestParser {
         String resource = getResource(parts[0]);
         HTTPVersion version = getVersion(parts[0]);
         MultipartRequestFactory mrf = MultipartRequestFactory.getCustomBoundaryAndMethod(boundary, version, method, resource);
+        headers.remove("Content-Length");
         headers.forEach((key, values) -> mrf.addHeader(key, values));
         BodyPartData[] bodyParts = getParts(parts[2], boundary);
         Arrays.stream(bodyParts).forEach((partData) -> mrf.addPart(partData.getData(), partData.getType(), partData.getDisposition(), partData.getDetails()));

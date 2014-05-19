@@ -37,7 +37,6 @@ public abstract class HashRequestHeaders implements IRequestHeaders {
                 }
                 header.append(values[values.length - 1]).append("\r\n");
             });
-            header.append("\r\n");
             headerText = header.toString();
         }
         return headerText;

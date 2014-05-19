@@ -297,7 +297,7 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         form.setMethod("post");
         form.setEncoding("multipart/form-data");
         form.setTarget("upload-handler.php");
-        form.setName("upload-form");
+        form.setID("upload-form");
         form.setClassName("center");
         
         IFileField file = new FileField();
