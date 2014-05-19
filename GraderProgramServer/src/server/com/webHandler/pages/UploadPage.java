@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -144,9 +146,9 @@ public class UploadPage extends HTMLFile implements IUploadPage {
     @Override
     public void setUser(String user) {
         this.user = user.replace("+", " ");
+        IDatabaseReader dr = new DatabaseReader();
         try {
             IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
-            IDatabaseReader dr = new DatabaseReader();
             dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
 
             try (ResultSet admins = dr.getAdminForUser(user)) {
@@ -156,6 +158,12 @@ public class UploadPage extends HTMLFile implements IUploadPage {
             }
         } catch (SQLException | IOException e) {
             LOG.log(Level.FINER, null, e);
+        } finally {
+            try {
+                dr.disconnect();
+            } catch (SQLException ex) {
+                Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         LOG.log(Level.INFO, "Authenticated as user {0}", user);
     }
@@ -242,8 +250,8 @@ public class UploadPage extends HTMLFile implements IUploadPage {
 
         ISpan userInfo = new Span();
         userInfo.setID("user-info");
+        IDatabaseReader dr = new DatabaseReader();
         try {
-            IDatabaseReader dr = new DatabaseReader();
             IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
             dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
             ResultSet admins = dr.getAdminForUser(user);
@@ -254,6 +262,12 @@ public class UploadPage extends HTMLFile implements IUploadPage {
             }
         } catch (SQLException e) {
             LOG.log(Level.FINER, null, e);
+        } finally {
+            try {
+                dr.disconnect();
+            } catch (SQLException ex) {
+                Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         header.addContent(userInfo);
 
@@ -291,38 +305,108 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         setBody(body);
     }
     
-    private IForm buildSubmitForm() {
+    private IForm buildSubmitForm() throws FileNotFoundException, IOException {
+        IDatabaseReader dr = new DatabaseReader();
         IForm form = new Form();
-        
-        form.setMethod("post");
-        form.setEncoding("multipart/form-data");
-        form.setTarget("upload_handler.php");
-        form.setID("upload-form");
-        form.setClassName("center");
-        
-        IFileField file = new FileField();
-        file.addAcceptType("application/zip", "application/java-archive", "application/json");
-        file.setForm("upload-form");
-        file.setName("file");
-        file.setID("file-select");
-        file.setRequired(true);
-        
-        ILabel fileLabel = new Label();
-        fileLabel.setLabel(new Text("File"));
-        fileLabel.setForm("upload-form");
-        fileLabel.setElementID("file-select");
-        
-        ISubmitButton upload = new SubmitButton();
-        upload.setValue("Upload");
-        upload.setForm("upload-form");
-        upload.setName("upload");
-        
-        form.addElement(fileLabel);
-        form.addElement(file);
-        form.addElement(new LineBreak());
-        form.addElement(upload);
-        
+        ResultSet results = null;
+        try {  
+            IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
+            dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
+            
+
+            form.setMethod("post");
+            form.setEncoding("multipart/form-data");
+            form.setAction("upload_handler.php");
+            form.setID("upload-form");
+            form.setClassName("center");
+            
+            if (isAdmin) {
+                form.addElement(buildDropDown(dr.getUsers(), "onyen", "onyen", "Onyen", onyen, true));
+            } else {
+                form.addElement(buildDropDown(new String[]{onyen}, "onyen", "Onyen", onyen, true));
+            }
+
+            form.addElement(buildDropDown(getCourseAndSectionList(), "course", "Course", "", true));
+
+            IFileField file = new FileField();
+            file.addAcceptType("application/zip", "application/java-archive", "application/json");
+            file.setForm("upload-form");
+            file.setName("file");
+            file.setID("file-select");
+            file.setRequired(true);
+
+            ILabel fileLabel = new Label();
+            fileLabel.setLabel(new Text("File"));
+            fileLabel.setForm("upload-form");
+            fileLabel.setElementID("file-select");
+
+            ISubmitButton upload = new SubmitButton();
+            upload.setValue("Upload");
+            upload.setForm("upload-form");
+            upload.setName("upload");
+
+            form.addElement(fileLabel);
+            form.addElement(file);
+            form.addElement(new LineBreak());
+            form.addElement(upload);
+        } catch (SQLException e) {
+            LOG.log(Level.FINER, null, e);
+        } finally {
+            if (results != null) {
+                try {
+                    results.close();
+                } catch (SQLException e) {
+                    LOG.log(Level.FINER, null, e);
+                }
+            }
+            try {
+                dr.disconnect();
+            } catch (SQLException ex) {
+                Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
         return form;
+    }
+    
+    private String[] getCourseAndSectionList() throws FileNotFoundException, IOException {
+        IDatabaseReader dr = new DatabaseReader();
+        ResultSet results = null;
+        IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
+        try {
+            dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
+            results = dr.getTerms();
+            while(results.next()) {
+                if (results.getBoolean("current")) {
+                    year = Integer.toString(results.getInt("year"));
+                    season = results.getString("season");
+                }
+            }
+            results.close();
+            results = dr.getCourses(year, season);
+            ArrayList<String> courses = new ArrayList<>(5);
+            while(results.next()) {
+                courses.add(results.getString("name") + "-" + results.getString("section"));
+            }
+            String[] courseArr = courses.toArray(new String[courses.size()]);
+            Arrays.sort(courseArr, String::compareToIgnoreCase);
+            return courses.toArray(new String[courses.size()]);
+        } catch (SQLException e) {
+            LOG.log(Level.FINER, null, e);
+            return new String[]{};
+        } finally {
+            if (results != null) {
+                try {
+                    results.close();
+                } catch (SQLException e) {
+                    LOG.log(Level.FINER, null, e);
+                }
+            }
+            try {
+                dr.disconnect();
+            } catch (SQLException ex) {
+                Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }
 
     private IForm buildForm() throws FileNotFoundException, IOException {
@@ -334,7 +418,7 @@ public class UploadPage extends HTMLFile implements IUploadPage {
             dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
             form.setMethod("post");
             form.setName("assignment_data");
-            form.setAction("https://classroom.cs.unc.edu/~vitkus/grader/lookup.php");
+            form.setAction("https://classroom.cs.unc.edu/~vitkus/grader/upload.php");
 
             if (isAdmin) {
                 form.addElement(buildDropDown(dr.getUsers(), "onyen", "onyen", "Onyen", onyen));
@@ -366,6 +450,11 @@ public class UploadPage extends HTMLFile implements IUploadPage {
                 } catch (SQLException e) {
                     LOG.log(Level.FINER, null, e);
                 }
+            }
+            try {
+                dr.disconnect();
+            } catch (SQLException ex) {
+                Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
 
