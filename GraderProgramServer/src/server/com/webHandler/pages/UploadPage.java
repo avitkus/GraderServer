@@ -296,7 +296,7 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         
         form.setMethod("post");
         form.setEncoding("multipart/form-data");
-        form.setTarget("upload-handler.php");
+        form.setTarget("upload_handler.php");
         form.setID("upload-form");
         form.setClassName("center");
         
@@ -304,12 +304,13 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         file.addAcceptType("application/zip", "application/java-archive", "application/json");
         file.setForm("upload-form");
         file.setName("file");
+        file.setID("file-select");
         file.setRequired(true);
         
         ILabel fileLabel = new Label();
         fileLabel.setLabel(new Text("File"));
         fileLabel.setForm("upload-form");
-        fileLabel.setElement(file);
+        fileLabel.setElementID("file-select");
         
         ISubmitButton upload = new SubmitButton();
         upload.setValue("Upload");
@@ -317,6 +318,7 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         upload.setName("upload");
         
         form.addElement(fileLabel);
+        form.addElement(file);
         form.addElement(new LineBreak());
         form.addElement(upload);
         
