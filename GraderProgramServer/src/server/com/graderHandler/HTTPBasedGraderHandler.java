@@ -66,7 +66,13 @@ public class HTTPBasedGraderHandler extends Thread {
 
     @Override
     public void run() {
+        try (BufferedInputStream bis = new BufferedInputStream(clientSocket.getInputStream())) {
+            
+        } catch (IOException ex) {
+            Logger.getLogger(HTTPBasedGraderHandler.class.getName()).log(Level.SEVERE, null, ex);
+        }
         try {
+            
             if (isAuthenticated(readVfykey())) {
                 FileTreeManager.checkPurgeRoot();
                 boolean success = readSubmission();
