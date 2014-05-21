@@ -18,6 +18,7 @@ import java.util.logging.Logger;
 import javax.net.ssl.SSLSocket;
 import server.com.webHandler.pages.AuthPage;
 import server.com.webHandler.pages.IAuthPage;
+import server.com.webHandler.pages.IGraderPage;
 import server.com.webHandler.pages.INotFoundPage;
 import server.com.webHandler.pages.IStudentDataLookupPage;
 import server.com.webHandler.pages.IStudentDataStatisticsPage;
@@ -28,6 +29,10 @@ import server.com.webHandler.pages.StudentDataStatisticsPage;
 import server.com.webHandler.pages.UploadPage;
 import server.com.webHandler.pages.css.AuthCSS;
 import server.com.webHandler.pages.css.IAuthCSS;
+import server.com.webHandler.pages.helpers.GraderPageSetup;
+import server.httpTools.request.IRequest;
+import server.httpTools.request.RequestParser;
+import server.httpTools.request.exceptions.MalformedRequestException;
 import server.utils.ConfigReader;
 import server.utils.IConfigReader;
 
@@ -143,20 +148,33 @@ public class WebHandler implements Runnable {
                 }
                 return icon.toString();
             }
-        } else {
-            //System.out.println("not found");
-            INotFoundPage nfp = new NotFoundPage();
-            int pageStart = request.indexOf(" /") + 2;
-            int pageEnd = request.indexOf(' ', pageStart);
-            String page = request.substring(pageStart, pageEnd);
-            if (page.isEmpty()) {
-                page = "index.html";
+        } else if (request.contains(" /submit.html ")) {
+            if (request.contains("multipart")) {
+                RequestParser parser = new RequestParser();
+                try {
+                    IRequest requestObj = parser.parse(request);
+                    if (requestObj.isMultipart()) {
+                        GraderPageSetup gps = new GraderPageSetup();
+                        IGraderPage page = gps.buildGraderPage(requestObj);
+                        return page.getHTML();
+                    }
+                } catch (MalformedRequestException ex) {
+                    Logger.getLogger(WebHandler.class.getName()).log(Level.SEVERE, null, ex);INotFoundPage nfp = new NotFoundPage();
+                }
             }
-            //System.out.println(page);
-            nfp.setPage(page);
-            String html = nfp.getHTML();
-            return buildHeader(404, 0) + html;
         }
+        //System.out.println("not found");
+        INotFoundPage nfp = new NotFoundPage();
+        int pageStart = request.indexOf(" /") + 2;
+        int pageEnd = request.indexOf(' ', pageStart);
+        String page = request.substring(pageStart, pageEnd);
+        if (page.isEmpty()) {
+            page = "index.html";
+        }
+        //System.out.println(page);
+        nfp.setPage(page);
+        String html = nfp.getHTML();
+        return buildHeader(404, 0) + html;
     }
 
     private String buildHeader(int status, int length) {
