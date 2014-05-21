@@ -18,7 +18,6 @@ import server.htmlBuilder.attributes.LinkTarget;
 import server.htmlBuilder.body.Body;
 import server.htmlBuilder.body.Division;
 import server.htmlBuilder.body.Header;
-import server.htmlBuilder.body.HorizontalRule;
 import server.htmlBuilder.body.Hyperlink;
 import server.htmlBuilder.body.IBody;
 import server.htmlBuilder.body.IDivision;
@@ -64,7 +63,8 @@ public class UploadPage extends HTMLFile implements IUploadPage {
 
         try {
             IConfigReader config = new ConfigReader("config/auth.properties");
-            auth = new StringBuilder(config.getString("database.view.authKey"));
+            auth.setLength(0);
+            auth.append(config.getString("database.view.authKey"));
         } catch (IOException ex) {
             Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -72,12 +72,8 @@ public class UploadPage extends HTMLFile implements IUploadPage {
     }
     private String onyen = "";
     private String user = "";
-    private String course = "";
-    private String section = "";
     private String year = "";
     private String season = "";
-    private String assignment = "";
-    private String type = "";
     private String auth = "";
     private boolean isAdmin;
 
@@ -98,36 +94,6 @@ public class UploadPage extends HTMLFile implements IUploadPage {
                 String[] argSplit = arg.split("=");
                 if (argSplit.length > 1) {
                     setUser(argSplit[1]);
-                }
-            } else if (arg.startsWith("course=")) {
-                String[] argSplit = arg.split("=");
-                if (argSplit.length > 1) {
-                    setCourse(argSplit[1]);
-                }
-            } else if (arg.startsWith("year=")) {
-                String[] argSplit = arg.split("=");
-                if (argSplit.length > 1) {
-                    setYear(argSplit[1]);
-                }
-            } else if (arg.startsWith("season=")) {
-                String[] argSplit = arg.split("=");
-                if (argSplit.length > 1) {
-                    setSeason(argSplit[1]);
-                }
-            } else if (arg.startsWith("assignment=")) {
-                String[] argSplit = arg.split("=");
-                if (argSplit.length > 1) {
-                    setAssignment(argSplit[1]);
-                }
-            } else if (arg.startsWith("type=")) {
-                String[] argSplit = arg.split("=");
-                if (argSplit.length > 1) {
-                    setType(argSplit[1]);
-                }
-            } else if (arg.startsWith("section=")) {
-                String[] argSplit = arg.split("=");
-                if (argSplit.length > 1) {
-                    setSection(argSplit[1]);
                 }
             } else if (arg.startsWith("auth=")) {
                 String[] argSplit = arg.split("=");
@@ -166,38 +132,6 @@ public class UploadPage extends HTMLFile implements IUploadPage {
             }
         }
         LOG.log(Level.INFO, "Authenticated as user {0}", user);
-    }
-
-    @Override
-    public void setCourse(String name) {
-        course = name.replace("+", " ");
-    }
-
-    @Override
-    public void setSection(String section) {
-        this.section = section.replace("+", " ");
-    }
-
-    @Override
-    public void setYear(String year) {
-        this.year = year.replace("+", " ");
-    }
-
-    @Override
-    public void setSeason(String season) {
-        this.season = season.replace("+", " ");
-    }
-
-    @Override
-    public void setAssignment(String assignment) {
-        assignment = assignment.replace("%2C", ",");
-        this.assignment = assignment.replace("+", " ");
-    }
-
-    @Override
-    public void setType(String type) {
-        type = type.replace("%2C", ",");
-        this.type = type.replace("+", " ");
     }
     
     @Override
@@ -296,8 +230,6 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         IDivision content = new Division();
         content.setClass("content");
         content.addContent(new StudentDataNavBar());
-        content.addContent(buildForm());
-        content.addContent(new HorizontalRule());
         content.addContent(buildSubmitForm());
         bodyWrapper.addContent(content);
         body.addElement(bodyWrapper);
@@ -325,9 +257,10 @@ public class UploadPage extends HTMLFile implements IUploadPage {
             } else {
                 form.addElement(buildDropDown(new String[]{onyen}, "onyen", "Onyen", onyen, true));
             }
+            form.addElement(new LineBreak());
 
             form.addElement(buildDropDown(getCourseAndSectionList(), "course", "Course", "", true));
-
+            
             IFileField file = new FileField();
             file.addAcceptType("application/zip", "application/java-archive", "application/json");
             file.setForm("upload-form");
@@ -339,6 +272,8 @@ public class UploadPage extends HTMLFile implements IUploadPage {
             fileLabel.setLabel(new Text("File"));
             fileLabel.setForm("upload-form");
             fileLabel.setElementID("file-select");
+            
+            form.addElement(new LineBreak());
 
             ISubmitButton upload = new SubmitButton();
             upload.setValue("Upload");
@@ -385,7 +320,16 @@ public class UploadPage extends HTMLFile implements IUploadPage {
             results = dr.getCourses(year, season);
             ArrayList<String> courses = new ArrayList<>(5);
             while(results.next()) {
-                courses.add(results.getString("name") + "-" + results.getString("section"));
+                courses.add(results.getString("name"));
+            }
+            results.close();
+            String[] courseNameArr = courses.toArray(new String[courses.size()]);
+            courses.clear();
+            for(String name : courseNameArr) {
+                results = dr.getSections(name, year, season);
+                while(results.next()) {
+                    courses.add(name + "-" + results.getString("section"));
+                }
             }
             String[] courseArr = courses.toArray(new String[courses.size()]);
             Arrays.sort(courseArr, String::compareToIgnoreCase);
@@ -407,62 +351,6 @@ public class UploadPage extends HTMLFile implements IUploadPage {
                 Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-    }
-
-    private IForm buildForm() throws FileNotFoundException, IOException {
-        IDatabaseReader dr = new DatabaseReader();
-        IForm form = new Form();
-        ResultSet results = null;
-        try {
-            IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
-            dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
-            form.setMethod("post");
-            form.setName("assignment_data");
-            form.setAction("https://classroom.cs.unc.edu/~vitkus/grader/upload.php");
-
-            if (isAdmin) {
-                form.addElement(buildDropDown(dr.getUsers(), "onyen", "onyen", "Onyen", onyen));
-            } else {
-                form.addElement(buildDropDown(new String[]{onyen}, "onyen", "Onyen", "onyen"));
-            }
-
-            form.addElement(buildDropDown(dr.getTypes(), "type", "name", "Type", type));
-            form.addElement(buildDropDown(dr.getAssignments(type, course, section, year, season), "assignment", "name", "Name", assignment));
-            form.addElement(buildDropDown(dr.getCourses(year, season), "course", "name", "Course", course));
-            if (!course.isEmpty()) {
-                form.addElement(buildDropDown(dr.getSections(course, year, season), "section", "section", "Section", section));
-            }
-            form.addElement(buildDropDown(dr.getTerms(), "year", "year", "Year", year));
-            form.addElement(buildDropDown(dr.getTerms(), "season", "season", "Season", season));
-            
-            ISubmitButton submit = new SubmitButton();
-            //submit.setForm("assignment_data");
-            submit.setName("assignment_data_submit");
-            submit.setValue("Submit");
-            form.addElement(submit);
-
-        } catch (SQLException e) {
-            LOG.log(Level.FINER, null, e);
-        } finally {
-            if (results != null) {
-                try {
-                    results.close();
-                } catch (SQLException e) {
-                    LOG.log(Level.FINER, null, e);
-                }
-            }
-            try {
-                dr.disconnect();
-            } catch (SQLException ex) {
-                Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-
-        return form;
-    }
-
-    private ILabel buildDropDown(ResultSet results, String id, String key, String name, String defaultVal) throws SQLException {
-        return buildDropDown(results, id, key, name, defaultVal, false);
     }
 
     private ILabel buildDropDown(ResultSet results, String id, String key, String name, String defaultVal, boolean required) throws SQLException {
@@ -490,10 +378,6 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         results.close();
 
         return assignmentLabel;
-    }
-
-    private ILabel buildDropDown(String[] options, String id, String name, String defaultVal) throws SQLException {
-        return buildDropDown(options, id, name, defaultVal, false);
     }
 
     private ILabel buildDropDown(String[] options, String id, String name, String defaultVal, boolean required) throws SQLException {

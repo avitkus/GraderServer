@@ -18,6 +18,7 @@ import server.htmlBuilder.attributes.LinkTarget;
 import server.htmlBuilder.body.Body;
 import server.htmlBuilder.body.Division;
 import server.htmlBuilder.body.Header;
+import server.htmlBuilder.body.HorizontalRule;
 import server.htmlBuilder.body.Hyperlink;
 import server.htmlBuilder.body.IBody;
 import server.htmlBuilder.body.IDivision;
@@ -290,6 +291,7 @@ public class StudentDataStatisticsPage extends HTMLFile implements IStudentDataS
         content.setClass("content");
         content.addContent(new StudentDataNavBar());
         content.addContent(buildForm());
+        content.addContent(new HorizontalRule());
         if (!assignment.isEmpty() && !course.isEmpty()) {
             content.addContent(buildAverageTable());
         } else {

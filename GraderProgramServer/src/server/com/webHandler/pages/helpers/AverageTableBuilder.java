@@ -87,10 +87,10 @@ public class AverageTableBuilder implements ITableBuilder {
                 ITableRow row = new TableRow();
                 row.setClassName("highlight-row");
                 row.addDataPart(new TableData(new Text(gradingEntry.getKey())));
-                row.addDataPart(new TableData(new Text(roundToString(gradingData.getAveragePoints(), 2))));
+                row.addDataPart(new TableData(new Text(roundToString(gradingData.getAveragePoints(), 1))));
                 row.addDataPart(new TableData(new Text(Integer.toString(gradingData.getPossible()))));
                 row.addDataPart(new TableData(new Text(gradingData.isExtraCredit() ? "Yes" : "No")));
-                row.addDataPart(new TableData(new Text(roundToString(gradingData.getPercentAutograded(), 2) + "%")));
+                row.addDataPart(new TableData(new Text(roundToString(gradingData.getPercentAutograded(), 1) + "%")));
                 
                 table.addRow(row);
                 row = new TableRow();
@@ -98,11 +98,11 @@ public class AverageTableBuilder implements ITableBuilder {
                 for (Entry<String, GradingData.TestData> testEntry : gradingData.getData()) {
                     GradingData.TestData test = testEntry.getValue();
                     row.addDataPart(new TableData(new Text(testEntry.getKey())));
-                    ITableData avgScore = new TableData(new Text(roundToString(test.getAverageScore(), 2) + "%"));
+                    ITableData avgScore = new TableData(new Text(roundToString(test.getAverageScore() * 100, 1) + "%"));
                     avgScore.setColSpan(2);
                     row.addDataPart(avgScore);
                     row.addDataPart(new TableData());
-                    row.addDataPart(new TableData(new Text(test.getAutoGrade() ? "Yes" : "No")));
+                    row.addDataPart(new TableData(new Text(test.isAutoGraded() ? "Yes" : "No")));
 
                     table.addRow(row);
                     row = new TableRow();
@@ -141,14 +141,14 @@ public class AverageTableBuilder implements ITableBuilder {
             if (testMap.containsKey(name)) {
                 testMap.get(name).addPoints(percent);
             } else {
-                testMap.put(name, new TestData(percent, autoGraded));
+                testMap.put(name, new TestData(percent, autoGraded, possible < 0));
             }
         }
 
         @SuppressWarnings("unchecked")
         Entry<String, TestData>[] getData() {
             Set<Entry<String, TestData>> testSet = testMap.entrySet();
-            return (Entry<String, TestData>[]) testMap.entrySet().toArray(new Entry[testSet.size()]);
+            return testMap.entrySet().toArray(new Entry[testSet.size()]);
         }
         
         double getAveragePoints() {
@@ -172,10 +172,13 @@ public class AverageTableBuilder implements ITableBuilder {
             private double percent;
             private int count;
             private final boolean autoGraded;
+            private final boolean isNegative;
 
-            TestData(double percent, boolean autoGraded) {
+            TestData(double percent, boolean autoGraded, boolean isNegative) {
                 this.percent = percent;
                 this.autoGraded = autoGraded;
+                this.isNegative = isNegative;
+                System.out.println(isNegative);
                 count = 1;
             }
 
@@ -185,11 +188,15 @@ public class AverageTableBuilder implements ITableBuilder {
             }
 
             double getAverageScore() {
-                return percent / count;
+                return (percent / count) * (isNegative ? -1 : 1);
             }
 
-            boolean getAutoGrade() {
+            boolean isAutoGraded() {
                 return autoGraded;
+            }
+            
+            boolean isNegative() {
+                return isNegative;
             }
         }
     }

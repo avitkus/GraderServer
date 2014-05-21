@@ -315,7 +315,7 @@ public class DatabaseReader implements IDatabaseReader {
 	@Override
 	public ResultSet getCourses(String year, String season) throws SQLException {
 		//System.out.println(onyen + ", " + assignment + ", " + course + ", " + year + ", " + season);
-		StringBuilder statement = new StringBuilder();
+		StringBuilder statement = new StringBuilder(75);
 		int count = 0;
 		statement.append("SELECT DISTINCT name FROM (\n");
 		if (year != null && !year.isEmpty()) {

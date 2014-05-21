@@ -17,6 +17,7 @@ import server.htmlBuilder.attributes.LinkTarget;
 import server.htmlBuilder.body.Body;
 import server.htmlBuilder.body.Division;
 import server.htmlBuilder.body.Header;
+import server.htmlBuilder.body.HorizontalRule;
 import server.htmlBuilder.body.Hyperlink;
 import server.htmlBuilder.body.IBody;
 import server.htmlBuilder.body.IDivision;
@@ -309,6 +310,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
         content.setClass("content");
         content.addContent(new StudentDataNavBar());
         content.addContent(buildForm());
+        content.addContent(new HorizontalRule());
         content.addContent(buildAssignmentTable());
         bodyWrapper.addContent(content);
         body.addElement(bodyWrapper);
@@ -642,7 +644,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
 
                             table.addRow(row);
                             row = new TableRow();
-
+                            
                             try (ResultSet tests = dr.getTestsForGrading(grading.getInt("id"))) {
                                 while (tests.next()) {
                                     row.addDataPart(new TableData(new Text(tests.getString("name"))));
