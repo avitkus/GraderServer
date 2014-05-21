@@ -178,7 +178,6 @@ public class AverageTableBuilder implements ITableBuilder {
                 this.percent = percent;
                 this.autoGraded = autoGraded;
                 this.isNegative = isNegative;
-                System.out.println(isNegative);
                 count = 1;
             }
 
