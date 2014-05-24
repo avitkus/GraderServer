@@ -227,7 +227,7 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
     @Override
     public String getHTML() {
         if (user.isEmpty() || !auth.equals(authKey)) {
-            return "";
+            return "<html><head><title>fail</title></head><body><h1>failure</h1></body></html>";
         }
         try {
             setDoctype(new HTML5Doctype());

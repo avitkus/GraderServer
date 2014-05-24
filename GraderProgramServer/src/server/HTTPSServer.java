@@ -77,22 +77,31 @@ public class HTTPSServer implements Runnable {
 
     public Runnable getConnectionRunnable(SSLSocket socket) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        String message = br.readLine();
-        //System.out.println("***"+message+"***");
-        if (message != null && message.startsWith("GET")) {
-            return new WebHandler(socket, message, null);
-        } else if (message != null && message.startsWith("POST")) {
-            //System.out.println("post");
-            StringBuilder sb = new StringBuilder(30);
-            while (br.ready()) {
-                sb.append((char) br.read());
-            }
+        String requestLine = br.readLine();
+        StringBuilder request = new StringBuilder(200);
+        request.append(requestLine).append("\r\n");
+        String line = br.readLine();
+        while(!line.isEmpty()) {
+            request.append(line).append("\r\n");
+            line = br.readLine();
+        }
+        request.append("\r\n");
+        String requestStr = request.toString();
+        int lenLoc = requestStr.indexOf("Content-Length:");
+        for(lenLoc += 15; lenLoc < requestStr.length() && !Character.isDigit(requestStr.charAt(lenLoc)); lenLoc ++);
+        int bodyLen = Integer.parseInt(requestStr.substring(lenLoc, requestStr.indexOf("\r\n", lenLoc)));
+        while(bodyLen > 0) {
+            request.append((char)br.read());
+            bodyLen --;
+        }
+        requestStr = request.toString();
+        if (requestLine != null && requestLine.startsWith("GET")) {
+            return new WebHandler(socket, requestLine, null, requestStr);
+        } else if (requestLine != null && requestLine.startsWith("POST")) {
+            int split = requestStr.indexOf("\r\n\r\n");
+            String args = requestStr.substring(split + 4);
 
-            String response = sb.toString();
-            int split = response.indexOf(System.lineSeparator() + System.lineSeparator());
-            String args = response.substring(split + System.lineSeparator().length() * 2);
-
-            return new WebHandler(socket, message, args);
+            return new WebHandler(socket, requestLine, args, requestStr);
         } else {
             socket.close();
             return new Runnable() {

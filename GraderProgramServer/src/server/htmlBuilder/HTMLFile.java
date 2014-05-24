@@ -60,7 +60,7 @@ public class HTMLFile implements IHTMLFile {
 	
 	@Override
 	public String getHTML() {
-		StringBuilder text = new StringBuilder();
+		StringBuilder text = new StringBuilder(500);
 		text.append(doctype.getText(0)).append("\n");
 		text.append("<html>\n");
 		text.append(head.getText(1)).append("\n");

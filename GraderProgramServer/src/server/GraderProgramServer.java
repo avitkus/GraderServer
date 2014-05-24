@@ -16,7 +16,7 @@ public class GraderProgramServer {
     static {
         Logger serverLog = Logger.getLogger("");
         ConsoleHandler ch = new ConsoleHandler();
-        ch.setLevel(Level.FINE);
+        ch.setLevel(Level.ALL);
         serverLog.addHandler(ch);
         try {
             FileHandler fh = new FileHandler("logs/server-%g.%u.log", 0, 50);

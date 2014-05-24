@@ -10,6 +10,7 @@ import java.io.StringReader;
 import java.net.Socket;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -48,13 +49,15 @@ public class WebHandler implements Runnable {
         return dateFormat.format(calendar.getTime());
     }
     private final Socket clientSocket;
-    private final String request;
+    private final String requestLine;
     private final String args;
+    private final String request;
 
-    public WebHandler(Socket socket, String request, String args) {
+    public WebHandler(Socket socket, String requestLine, String args, String request) {
         clientSocket = socket;
-        this.request = request;
+        this.requestLine = requestLine;
         this.args = args;
+        this.request = request;
         //System.out.println(request + ": " + args);
     }
 
@@ -62,7 +65,9 @@ public class WebHandler implements Runnable {
     public void run() {
         try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()))) {
             //System.out.println("okay");
-            BufferedReader sbr = new BufferedReader(new StringReader(getSite()));
+            String site = getSite();
+            System.out.println(site);
+            BufferedReader sbr = new BufferedReader(new StringReader(site));
             String line;
             while ((line = sbr.readLine()) != null) {
                 //System.out.println(line);
@@ -82,7 +87,8 @@ public class WebHandler implements Runnable {
     }
 
     private String getSite() throws FileNotFoundException, IOException {
-        if (request.contains(" / ")) {
+        System.out.println("*** " + requestLine);
+        if (requestLine.contains(" / ")) {
             IAuthPage ap = new AuthPage();
             if (args != null) {
                 ap.setArgs(args);
@@ -106,7 +112,7 @@ public class WebHandler implements Runnable {
 
             String html = ap.getHTML();
             return buildHeader(200, html.length()) + html;
-        } else if (request.contains(" /lookup.html")) {
+        } else if (requestLine.contains(" /lookup.html")) {
             //System.out.println(request);
             IStudentDataLookupPage sdlp = new StudentDataLookupPage();
             if (args != null) {
@@ -114,8 +120,9 @@ public class WebHandler implements Runnable {
             }
 
             String html = sdlp.getHTML();
+            Arrays.stream(html.split("\n")).forEach((line) -> System.out.println("--- " + line));
             return buildHeader(200, html.length()) + html;
-        } else if (request.contains(" /stats.html")) {
+        } else if (requestLine.contains(" /stats.html")) {
             //System.out.println(request);
             IStudentDataStatisticsPage sdsp = new StudentDataStatisticsPage();
             if (args != null) {
@@ -123,8 +130,9 @@ public class WebHandler implements Runnable {
             }
 
             String html = sdsp.getHTML();
+            Arrays.stream(html.split("\n")).forEach((line) -> System.out.println("--- " + line));
             return buildHeader(200, html.length()) + html;
-        } else if (request.contains(" /upload.html")) {
+        } else if (requestLine.contains(" /upload.html")) {
             //System.out.println(request);
             IUploadPage up = new UploadPage();
             if (args != null) {
@@ -132,49 +140,55 @@ public class WebHandler implements Runnable {
             }
 
             String html = up.getHTML();
+            Arrays.stream(html.split("\n")).forEach((line) -> System.out.println("--- " + line));
             return buildHeader(200, html.length()) + html;
-        } else if (request.contains(" /auth.css")) {
+        } else if (requestLine.contains(" /auth.css")) {
             //System.out.println(request);
             IAuthCSS authCSS = new AuthCSS();
 
             String html = authCSS.getCSS(0);
             return buildHeader(200, html.length(), "text/css") + html;
-        } else if (request.contains(" /favicon.ico ")) {
+        } else if (requestLine.contains(" /favicon.ico ")) {
             //System.out.println("favicon");
             try (BufferedReader br = new BufferedReader(new FileReader(Paths.get("favicon.ico").toFile()))) {
                 StringBuilder icon = new StringBuilder(100);
                 while (br.ready()) {
                     icon.append(br.readLine()).append("\r\n");
                 }
-                return icon.toString();
+                String icn = icon.toString();
+                return buildHeader(200, icn.length()) + icn;
             }
-        } else if (request.contains(" /submit.html ")) {
-            if (request.contains("multipart")) {
-                RequestParser parser = new RequestParser();
-                try {
-                    IRequest requestObj = parser.parse(request);
-                    if (requestObj.isMultipart()) {
-                        GraderPageSetup gps = new GraderPageSetup();
-                        IGraderPage page = gps.buildGraderPage(requestObj);
-                        return page.getHTML();
-                    }
-                } catch (MalformedRequestException ex) {
-                    Logger.getLogger(WebHandler.class.getName()).log(Level.SEVERE, null, ex);INotFoundPage nfp = new NotFoundPage();
+        } else if (requestLine.contains(" /submit.html ") && request.contains("multipart")) {
+            RequestParser parser = new RequestParser();
+            try {
+                IRequest requestObj = parser.parse(request);
+                if (requestObj.isMultipart()) {
+                    GraderPageSetup gps = new GraderPageSetup();
+                    IGraderPage page = gps.buildGraderPage(requestObj);
+                    String html = page.getHTML();
+                    Arrays.stream(html.split("\n")).forEach((line) -> System.out.println("--- " + line));
+                    return buildHeader(200, html.length()) + html;
+                } else {
+                    return "";
                 }
+            } catch (MalformedRequestException ex) {
+                LOG.log(Level.SEVERE, null, ex);
+                return "";
             }
+        } else {
+            //System.out.println("not found");
+            INotFoundPage nfp = new NotFoundPage();
+            int pageStart = requestLine.indexOf(" /") + 2;
+            int pageEnd = requestLine.indexOf(' ', pageStart);
+            String page = requestLine.substring(pageStart, pageEnd);
+            if (page.isEmpty()) {
+                page = "index.html";
+            }
+            //System.out.println(page);
+            nfp.setPage(page);
+            String html = nfp.getHTML();
+            return buildHeader(404, html.length()) + html;
         }
-        //System.out.println("not found");
-        INotFoundPage nfp = new NotFoundPage();
-        int pageStart = request.indexOf(" /") + 2;
-        int pageEnd = request.indexOf(' ', pageStart);
-        String page = request.substring(pageStart, pageEnd);
-        if (page.isEmpty()) {
-            page = "index.html";
-        }
-        //System.out.println(page);
-        nfp.setPage(page);
-        String html = nfp.getHTML();
-        return buildHeader(404, 0) + html;
     }
 
     private String buildHeader(int status, int length) {
@@ -198,7 +212,7 @@ public class WebHandler implements Runnable {
 
         head.append("Date: ").append(getServerTime()).append("\r\n");
         head.append("Connection: close\r\n");
-        //head.append("Content-Length: ").append(length).append("\r\n");
+        head.append("Content-Length: ").append(length).append("\r\n");
         head.append("Content-Type: ").append(type).append("; charset=UTF-8\r\n");
         head.append("\r\n");
 

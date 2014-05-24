@@ -79,6 +79,7 @@ public class UploadPage extends HTMLFile implements IUploadPage {
 
     @Override
     public void setArgs(String args) {
+        System.out.println(args);
         String[] temp = args.split("\\s");
         args = temp[temp.length - 1];
         args = args.trim();
@@ -141,8 +142,11 @@ public class UploadPage extends HTMLFile implements IUploadPage {
 
     @Override
     public String getHTML() {
+        System.out.println(user);
+        System.out.println(auth);
+        System.out.println(authKey);
         if (user.isEmpty() || !auth.equals(authKey)) {
-            return "";
+            return "<html><head><title>fail</title></head><body><h1>failure</h1></body></html>";
         }
         try {
             setDoctype(new HTML5Doctype());
