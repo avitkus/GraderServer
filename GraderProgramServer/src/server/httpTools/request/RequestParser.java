@@ -118,15 +118,17 @@ public class RequestParser implements IRequestParser {
             String[] details = new String[]{};
             String data = "";
       
+            System.out.println("==========");
+            
             if (partParts.length == 2) {
                 String[] headerParts = partParts[0].split("[\r\n]+");
-                System.out.println("***\n"+partParts[0]+"\n+++");
                 
                 for(String headerPart : headerParts) {
                     if (!headerPart.isEmpty()) {
-                       String[] partPartParts = magic(headerPart); // I'm so sorry for this naming...but that is what it is
-                       //System.out.println(headerPart);
-                       switch (partPartParts[0]) {
+                        System.out.println(headerPart);
+                        String[] partPartParts = magic(headerPart); // I'm so sorry for this naming...but that is what it is
+                        System.out.println(partPartParts[0]);
+                        switch (partPartParts[0]) {
                            case "Content-Disposition":
                                disposition = partPartParts[1];
                                details = Arrays.copyOfRange(partPartParts, 2, partPartParts.length);
@@ -139,9 +141,17 @@ public class RequestParser implements IRequestParser {
                 }
             }
             data = partParts[partParts.length - 1];
+            if (data.endsWith("\r\n")) {
+                data = data.substring(0, data.length() - 2);
+            }
             
             //System.out.println(disposition + ", " + type + ", " + data + ", " + Arrays.toString(details));
             parts.add(new BodyPartData(disposition, type, details, data));
+            //System.out.println("1:" + parts.get(parts.size() - 1).getData());
+            //parts.get(parts.size() - 1).getData().chars().forEach((c) -> System.out.println(Character.getName(c)));
+            //System.out.println("2:" + Arrays.toString(parts.get(parts.size() - 1).getDetails()));
+            //System.out.println("3:" + parts.get(parts.size() - 1).getDisposition());
+            //System.out.println("4:" + parts.get(parts.size() - 1).getType());
             //Arrays.stream(partParts).forEach((s) -> System.out.println("--- " + Arrays.toString(magic(s))));
         }
         return parts.toArray(new BodyPartData[parts.size()]);
@@ -159,15 +169,16 @@ public class RequestParser implements IRequestParser {
         String args = split[0].isEmpty() ? split[split.length - 1] : line;
         ArrayList<String> parts = new ArrayList<>(5);
         int colLoc = args.indexOf(':');
-        if (colLoc > 0 && split[0].isEmpty()) {
+        if (colLoc > 0 && !split[0].isEmpty()) {
             parts.add(args.substring(0, colLoc));
             args = args.substring(args.indexOf(' ') + 1);
         }
         int semLoc = args.indexOf(';');
         int len = args.length();
-        int check = semLoc >= 0 ? semLoc : len - 2;
+        split = args.split("[\r\n]+");
+        int check = semLoc >= 0 ? semLoc : args.endsWith("\r\n") ? len - 2 : len;
         parts.add(args.substring(0, check));
-        args = args.substring(Math.min(check + 1, len)).trim();
+        args = args.substring(Math.min(check + 1, len));
         
         StringBuilder thing = new StringBuilder(10);
         try (StringReader sr = new StringReader(args)) {
