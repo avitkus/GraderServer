@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import server.htmlBuilder.HTMLFile;
 import server.htmlBuilder.body.Body;
 import server.htmlBuilder.body.IBody;
+import server.htmlBuilder.doctype.HTML5Doctype;
 import server.htmlBuilder.head.Head;
 import server.htmlBuilder.head.ILink;
 import server.htmlBuilder.head.IMetaAttr;
@@ -39,6 +40,7 @@ public class GraderPage extends HTMLFile implements IGraderPage {
 
     @Override
     public String getHTML() {
+        setDoctype(new HTML5Doctype());
         buildParts();
         return super.getHTML();
     }

@@ -10,7 +10,6 @@ import java.io.StringReader;
 import java.net.Socket;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -66,7 +65,6 @@ public class WebHandler implements Runnable {
         try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()))) {
             //System.out.println("okay");
             String site = getSite();
-            System.out.println(site);
             BufferedReader sbr = new BufferedReader(new StringReader(site));
             String line;
             while ((line = sbr.readLine()) != null) {
@@ -87,7 +85,6 @@ public class WebHandler implements Runnable {
     }
 
     private String getSite() throws FileNotFoundException, IOException {
-        System.out.println("*** " + requestLine);
         if (requestLine.contains(" / ")) {
             IAuthPage ap = new AuthPage();
             if (args != null) {
@@ -120,7 +117,6 @@ public class WebHandler implements Runnable {
             }
 
             String html = sdlp.getHTML();
-            Arrays.stream(html.split("\n")).forEach((line) -> System.out.println("--- " + line));
             return buildHeader(200, html.length()) + html;
         } else if (requestLine.contains(" /stats.html")) {
             //System.out.println(request);
@@ -130,7 +126,6 @@ public class WebHandler implements Runnable {
             }
 
             String html = sdsp.getHTML();
-            Arrays.stream(html.split("\n")).forEach((line) -> System.out.println("--- " + line));
             return buildHeader(200, html.length()) + html;
         } else if (requestLine.contains(" /upload.html")) {
             //System.out.println(request);
@@ -140,7 +135,6 @@ public class WebHandler implements Runnable {
             }
 
             String html = up.getHTML();
-            Arrays.stream(html.split("\n")).forEach((line) -> System.out.println("--- " + line));
             return buildHeader(200, html.length()) + html;
         } else if (requestLine.contains(" /auth.css")) {
             //System.out.println(request);
@@ -160,13 +154,14 @@ public class WebHandler implements Runnable {
             }
         } else if (requestLine.contains(" /submit.html ") && request.contains("multipart")) {
             RequestParser parser = new RequestParser();
+            //System.out.println("***----***\n" + request + "***----***");
             try {
                 IRequest requestObj = parser.parse(request);
                 if (requestObj.isMultipart()) {
+                    System.out.println("upload");
                     GraderPageSetup gps = new GraderPageSetup();
                     IGraderPage page = gps.buildGraderPage(requestObj);
                     String html = page.getHTML();
-                    Arrays.stream(html.split("\n")).forEach((line) -> System.out.println("--- " + line));
                     return buildHeader(200, html.length()) + html;
                 } else {
                     return "";

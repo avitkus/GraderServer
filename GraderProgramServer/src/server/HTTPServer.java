@@ -81,4 +81,12 @@ public class HTTPServer implements Runnable {
             };
         }
     }
+    
+    private char[] intToCharArr(int i) {
+        char[] chars = new char[2];
+        chars[1] = (char)i;
+        i >>= 16;
+        chars[0] = (char)i;
+        return chars;
+    }
 }

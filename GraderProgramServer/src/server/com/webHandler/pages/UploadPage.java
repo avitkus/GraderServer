@@ -85,6 +85,7 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         args = args.trim();
         //System.out.println("Args: " + args);
         String[] argList = args.split("&");
+        //Arrays.stream(argList).forEach((str) -> System.out.println(str.length() + ": " + str));
         for (String arg : argList) {
             if (arg.startsWith("onyen=")) {
                 String[] argSplit = arg.split("=");
@@ -266,7 +267,6 @@ public class UploadPage extends HTMLFile implements IUploadPage {
             form.addElement(buildDropDown(getCourseAndSectionList(), "course", "Course", "", true));
             
             IFileField file = new FileField();
-            file.addAcceptType("application/zip", "application/java-archive", "application/json");
             file.setForm("upload-form");
             file.setName("file");
             file.setID("file-select");

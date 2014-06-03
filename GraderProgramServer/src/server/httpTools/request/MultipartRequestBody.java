@@ -16,6 +16,7 @@ public abstract class MultipartRequestBody implements IRequestBody {
         boundary = "";
         bodyText = "";
         init();
+        boundary = boundary.trim();
     }
     
     protected abstract void init();
@@ -32,16 +33,21 @@ public abstract class MultipartRequestBody implements IRequestBody {
     private String computeBody() {
         if (bodyText.isEmpty()) {
             StringBuilder body = new StringBuilder(100);
-            body.append("\r\n");
             for(MultipartContent content : contents) {
                 body.append("--").append(boundary);
-                body.append("\r\nContent-Disposition: ").append(content.getDispositionType());
+                String dispostion = content.getDispositionType();
+                if (!dispostion.isEmpty()) {
+                    body.append("Content-Disposition: ").append(content.getDispositionType());
+                    content.getDisposition().forEach((key, value) -> body.append("; ").append(key).append("=\"").append(value).append("\""));
+                    body.append("\r\n");
+                }
+                
+                String type = content.getType();
+                if (!type.isEmpty()) {
+                    body.append("Content-Type: ").append(content.getType());
+                }
 
-                content.getDisposition().forEach((key, value) -> body.append("; ").append(key).append("=\"").append(value).append("\""));
-
-                body.append("\r\nContent-Type: ").append(content.getType()).append("\r\n\r\n");
-
-                body.append(content.getContent()).append("\r\n");
+                body.append(content.getContent());
             }
             body.append("--").append(boundary).append("--");
             bodyText = body.toString();

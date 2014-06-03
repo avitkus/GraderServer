@@ -58,7 +58,7 @@ public class RequestParser implements IRequestParser {
         request = request.trim();
         int infoEnd = request.indexOf("\r\n");
         String requestInfo = request.substring(0, infoEnd);
-        String[] parts = request.substring(infoEnd + 2).split("\r\n\r\n", 2);
+        String[] parts = request.split("[\r\n]+", 2)[1].split("\r\n\r\n", 2);
         String[] split = new String[3];
         split[0] = requestInfo;
         split[1] = parts[0];
@@ -112,27 +112,34 @@ public class RequestParser implements IRequestParser {
         String[] split = body.split("--"+boundary);
         ArrayList<BodyPartData>  parts = new ArrayList<>(split.length);
         for(int i = 1; i < split.length - 1; i ++) {
-            String[] partParts = split[i].split("[\r\n]+");
+            String[] partParts = split[i].split("\r\n\r\n", 2);
             String disposition = "";
             String type = "";
             String[] details = new String[]{};
             String data = "";
-            for (String partPart : partParts) {
-                if (!partPart.isEmpty()) {
-                    String[] partPartParts = magic(partPart); // I'm so sorry for this naming...but that is what it is
-                    switch (partPartParts[0]) {
-                        case "Content-Disposition":
-                            disposition = partPartParts[1];
-                            details = Arrays.copyOfRange(partPartParts, 2, partPartParts.length);
-                            break;
-                        case "Content-Type":
-                            type = partPartParts[1];
-                            break;
-                        default:
-                            data = partPart;
+      
+            if (partParts.length == 2) {
+                String[] headerParts = partParts[0].split("[\r\n]+");
+                System.out.println("***\n"+partParts[0]+"\n+++");
+                
+                for(String headerPart : headerParts) {
+                    if (!headerPart.isEmpty()) {
+                       String[] partPartParts = magic(headerPart); // I'm so sorry for this naming...but that is what it is
+                       //System.out.println(headerPart);
+                       switch (partPartParts[0]) {
+                           case "Content-Disposition":
+                               disposition = partPartParts[1];
+                               details = Arrays.copyOfRange(partPartParts, 2, partPartParts.length);
+                               break;
+                           case "Content-Type":
+                               type = partPartParts[1];
+                               break;
+                        }
                     }
                 }
             }
+            data = partParts[partParts.length - 1];
+            
             //System.out.println(disposition + ", " + type + ", " + data + ", " + Arrays.toString(details));
             parts.add(new BodyPartData(disposition, type, details, data));
             //Arrays.stream(partParts).forEach((s) -> System.out.println("--- " + Arrays.toString(magic(s))));
@@ -148,15 +155,17 @@ public class RequestParser implements IRequestParser {
      */
     private String[] magic(String line) {
         //System.out.println("***"+line+"***");
+        String[] split = line.split("[\r\n]+", 2);
+        String args = split[0].isEmpty() ? split[split.length - 1] : line;
         ArrayList<String> parts = new ArrayList<>(5);
-        int colLoc = line.trim().indexOf(':');
-        if (colLoc > 0) {
-            parts.add(line.substring(0, colLoc));
+        int colLoc = args.indexOf(':');
+        if (colLoc > 0 && split[0].isEmpty()) {
+            parts.add(args.substring(0, colLoc));
+            args = args.substring(args.indexOf(' ') + 1);
         }
-        String args = line.substring(line.indexOf(' ') + 1);
         int semLoc = args.indexOf(';');
         int len = args.length();
-        int check = semLoc >= 0 ? semLoc : len;
+        int check = semLoc >= 0 ? semLoc : len - 2;
         parts.add(args.substring(0, check));
         args = args.substring(Math.min(check + 1, len)).trim();
         

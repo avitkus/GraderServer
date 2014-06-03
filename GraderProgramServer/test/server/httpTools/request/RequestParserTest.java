@@ -61,7 +61,7 @@ public class RequestParserTest {
                 + "Content-Disposition: form-data; name=\"datafile3\"; filename=\"b.gif\"\r\n"
                 + "Content-Type: image/gif\r\n"
                 + "\r\n"
-                + "GIF87a.............,...........D..;\r\n"
+                + "GIF87a\n.............,...........\rD\r\n..;\r\n"
                 + "-----------------------------287032381131322--";
         RequestParser instance = new RequestParser();
         IRequest result = instance.parse(request);
