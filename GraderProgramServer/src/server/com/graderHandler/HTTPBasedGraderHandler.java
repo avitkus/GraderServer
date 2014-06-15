@@ -187,7 +187,7 @@ public class HTTPBasedGraderHandler extends Thread {
         try {
             IResponseWriter responseWriter = new JSONBasedResponseWriter(jsonFile);
             responseWriter.setAssignmentName(title);
-            replyUTF(responseWriter.getResponse());
+            replyUTF(responseWriter.getResponseText());
         } catch (FileNotFoundException e) {
             LOG.log(Level.WARNING, "Unable to access JSON file at: {0}", jsonFile.getAbsolutePath());
             throw e;

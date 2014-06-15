@@ -2,6 +2,7 @@ package server.com.graderHandler;
 
 import server.com.graderHandler.pages.FailPage;
 import server.com.graderHandler.pages.IGraderResponsePage;
+import server.htmlBuilder.IHTMLFile;
 
 
 public class ResponseWriter implements IResponseWriter {
@@ -11,9 +12,14 @@ public class ResponseWriter implements IResponseWriter {
     protected ResponseWriter() {
         response = new FailPage();
     }
+    
+    @Override
+    public IHTMLFile getResponse() {
+        return response;
+    }
 
     @Override
-    public String getResponse() {
+    public String getResponseText() {
         return response.getHTML();
     }
 
@@ -21,5 +27,4 @@ public class ResponseWriter implements IResponseWriter {
     public void setAssignmentName(String name) {
         response.setAssignmentName(name);
     }
-
 }

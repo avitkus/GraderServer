@@ -1,28 +1,20 @@
 package server.com.graderHandler;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLSocket;
 import server.com.graderHandler.sql.DatabaseReader;
 import server.com.graderHandler.sql.DatabaseWriter;
 import server.com.graderHandler.sql.IDatabaseReader;
@@ -30,6 +22,7 @@ import server.com.graderHandler.sql.IDatabaseWriter;
 import server.com.graderHandler.util.CSVGradeWriter;
 import server.com.graderHandler.util.FileTreeManager;
 import server.com.graderHandler.util.GradingData;
+import server.com.graderHandler.util.GradingFailureException;
 import server.com.graderHandler.util.IGradeWriter;
 import server.com.graderHandler.util.IGradingData;
 import server.com.graderHandler.util.IJSONReader;
@@ -37,106 +30,98 @@ import server.com.graderHandler.util.JSONReader;
 import server.com.gradingProgram.GraderPool;
 import server.com.gradingProgram.GraderSetup;
 import server.com.gradingProgram.IGraderSetup;
+import server.htmlBuilder.IHTMLFile;
 import server.utils.ConfigReader;
 import server.utils.IConfigReader;
-import server.utils.ZipReader;
 
+public class InputBasedGraderHandler {
 
-public class JavaBasedGraderHandler extends Thread {
-    private static final Logger LOG = Logger.getLogger(JavaBasedGraderHandler.class.getName());
+    private static final Logger LOG = Logger.getLogger(InputBasedGraderHandler.class.getName());
 
-    private final int BUFFER_SIZE = 4096;
-
-    private final SSLSocket clientSocket;
     private String title;
     private String course;
+    private String section;
     private String onyen;
     private String uid;
     private String first;
     private String last;
     private String pid;
-    private File zip;
+    private Path submission;
     private Path assignmentRoot;
     private Path submissionPath;
 
-    public JavaBasedGraderHandler(SSLSocket clientSocket) {
-        this.clientSocket = clientSocket;
+    public InputBasedGraderHandler() {
         assignmentRoot = Paths.get("graderProgram", "data");
     }
 
-    @Override
-    public void run() {
+    public void setCourse(String course) {
+        this.course = course;
+    }
+
+    public void setSection(String section) {
+        this.section = section;
+    }
+
+    public void setOyen(String onyen) {
+        this.onyen = onyen;
+    }
+
+    public void setAssignment(String name) {
+        this.title = name;
+    }
+
+    public void setSubmission(Path submission) {
+        this.submission = submission;
+    }
+
+    public IHTMLFile process(Path file) throws GradingFailureException {
         try {
-            if (isAuthenticated(readVfykey())) {
-                FileTreeManager.checkPurgeRoot();
-                boolean success = readSubmission();
-                replyBoolean(success);
-                if (success) {
-                    try {
-                        grade();
-                    } catch (InterruptedException e1) {
-                        LOG.log(Level.FINER, null, e1);
-                    }
-                    sendResponse(title);
-                    try {
-                        try {
-                            // write to grades.csv of old zip if allowed
-                            if (underSubmitLimit()) {
-                                saveToGradesFile();
-                            }
-                        } catch (FileNotFoundException | InterruptedException | ExecutionException ex) {
-                            LOG.log(Level.FINER, null, ex);
-                        }
-                        postToDatabase();
-                    } catch (SQLException e) {
-                        LOG.log(Level.FINER, null, e);
-                    }
+            FileTreeManager.checkPurgeRoot();
+            boolean success = readSubmission(file);
+            if (success) {
+                try {
+                    grade();
+                } catch (InterruptedException e1) {
+                    LOG.log(Level.FINER, null, e1);
                 }
+                try {
+                    try {
+                        // write to grades.csv of old zip if allowed
+                        if (underSubmitLimit()) {
+                            saveToGradesFile();
+                        }
+                    } catch (FileNotFoundException | InterruptedException | ExecutionException ex) {
+                        LOG.log(Level.FINER, null, ex);
+                    }
+                    postToDatabase();
+                } catch (SQLException e) {
+                    LOG.log(Level.FINER, null, e);
+                }
+                return createResponse(title);
+            } else {
+                throw new GradingFailureException();
             }
         } catch (MalformedURLException e1) {
             LOG.log(Level.FINER, null, e1);
+            throw new GradingFailureException();
         } catch (IOException e1) {
             LOG.log(Level.FINER, null, e1);
-        } finally {
-            try {
-                clientSocket.close();
-            } catch (IOException e) {
-                LOG.log(Level.FINER, null, e);
-            }
+            throw new GradingFailureException();
         }
     }
 
-    private String readVfykey() throws IOException {
-        DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
-        return dis.readUTF();
-    }
-
-    private boolean readSubmission() {
+    private boolean readSubmission(Path file) {
         try {
-            DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
-
-            course = dis.readUTF();
-
-            String assignmentName = dis.readUTF();
-            title = assignmentName;
-
-            int parenStart = title.indexOf('(');
-            int parenEnd = title.indexOf(')');
-            assignmentName = title.substring(parenStart + 1, parenEnd);
-            assignmentName = assignmentName.replace(" ", "");
-
-            String[] courseParts = course.split("-");
-
             int year = Calendar.getInstance().get(Calendar.YEAR);
 
-            assignmentRoot = assignmentRoot.resolve(Paths.get(Integer.toString(year), courseParts[0].replace(" ", ""), courseParts[1], assignmentName));
+            assignmentRoot = assignmentRoot.resolve(Paths.get(Integer.toString(year), course, section, title));
             submissionPath = assignmentRoot.resolve("(" + onyen + ")");
-            Path zipPath = submissionPath.resolve(Paths.get("Submission attachment(s)", assignmentName + ".zip"));
+            submissionPath = submissionPath.resolve(Paths.get("Submission attachment(s)").resolve(submission));
 
             try {
-                if (zipPath.toFile().exists() && underSubmitLimit()) { // write backup of old zip if allowed
-                    Path zipBackupPath = submissionPath.resolve(Paths.get("Submission attachment(s)", assignmentName + ".zip.bak"));
-                    FileTreeManager.backup(zipPath, zipBackupPath);
+                if (submissionPath.toFile().exists() && underSubmitLimit()) { // write backup of old zip if allowed
+                    Path zipBackupPath = submissionPath.resolve(Paths.get("Submission attachment(s)", title + ".zip.bak"));
+                    FileTreeManager.backup(submissionPath, zipBackupPath);
                 }
             } catch (FileNotFoundException e) {
                 LOG.log(Level.FINER, null, e);
@@ -146,116 +131,27 @@ public class JavaBasedGraderHandler extends Thread {
 
             FileTreeManager.purgeSubmission(submissionPath);
 
-            Files.createDirectories(submissionPath.resolve("Submission attachment(s)"));
-            zip = zipPath.toFile();
+            submissionPath = submissionPath.resolve("Submission attachment(s)");
 
-            zip.createNewFile();
+            Files.createDirectories(submissionPath);
 
-            long fileSize = dis.readLong();
-
-            if (!zip.canWrite()) {
-                return false;
-            }
-            try (FileOutputStream fos = new FileOutputStream(zip)) {
-                byte[] data = new byte[BUFFER_SIZE];
-                int bytesRead = -1;
-                while (fileSize > 0 && (bytesRead = dis.read(data)) != -1) {
-                    fos.write(data, 0, bytesRead);
-                    fileSize -= bytesRead;
-                }
-
-                fos.flush();
-                return true;
-            } catch (IOException e) {
-                LOG.log(Level.FINER, null, e);
-                return false;
-            }
+            FileTreeManager.move(submission, submissionPath);
+            return true;
         } catch (IOException e) {
             LOG.log(Level.FINER, null, e);
             return false;
         }
     }
 
-    private void sendResponse(String title) throws FileNotFoundException, IOException {
+    private IHTMLFile createResponse(String title) throws FileNotFoundException, IOException {
         File jsonFile = submissionPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile();
         try {
             IResponseWriter responseWriter = new JSONBasedResponseWriter(jsonFile);
             responseWriter.setAssignmentName(title);
-            replyUTF(responseWriter.getResponseText());
+            return responseWriter.getResponse();
         } catch (FileNotFoundException e) {
             LOG.log(Level.WARNING, "Unable to access JSON file at: {0}", jsonFile.getAbsolutePath());
             throw e;
-        }
-    }
-
-    private void replyUTF(String response) {
-        try {
-            DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
-            dos.writeUTF(response);
-            dos.flush();
-        } catch (IOException e) {
-            LOG.log(Level.FINER, null, e);
-        }
-    }
-
-    private void replyBoolean(boolean response) {
-        try {
-            DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
-            dos.writeBoolean(response);
-            dos.flush();
-        } catch (IOException e) {
-            LOG.log(Level.FINER, null, e);
-        }
-    }
-
-    private boolean isAuthenticated(String vfykey) throws MalformedURLException, IOException {
-        URL authURL = new URL("https", "onyen.unc.edu", 443, "/cgi-bin/unc_id/authenticator.pl/" + vfykey);
-        HttpsURLConnection auth = (HttpsURLConnection) authURL.openConnection();
-
-        auth.setDoOutput(true);
-        auth.setDoInput(true);
-        auth.getOutputStream().write(42);
-
-        /*
-         * build a map of the auth server's key-value pair response
-         */
-        String response = getResponse(auth);
-        HashMap<String, String> responseMap = new HashMap<>(7);
-        Arrays.stream(response.split("\n")).forEach((String responseLine) -> {
-            String[] lineParts = responseLine.split(": ");
-            responseMap.put(lineParts[0], lineParts[1]);
-        });
-
-        int colon1Loc = response.indexOf(':');
-        int endLnLoc = response.indexOf('\n');
-        String authStatus;
-        if (endLnLoc > 0) {
-            authStatus = response.substring(colon1Loc + 2, endLnLoc);
-        } else {
-            authStatus = response.substring(colon1Loc + 2);
-        }
-        //System.out.println(authStatus);
-        if (authStatus.equals("pass")) {
-            onyen = response.substring(0, colon1Loc);
-            uid = responseMap.get("uid");
-            pid = responseMap.get("pid");
-            first = responseMap.get("givenName");
-            last = responseMap.get("uncPreferredSurname");
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    private String getResponse(HttpsURLConnection connection) throws IOException {
-        byte[] bytes = new byte[512];
-        try (BufferedInputStream bis = new BufferedInputStream(connection.getInputStream())) {
-            StringBuilder response = new StringBuilder(30);
-            int in;
-            while ((in = bis.read(bytes)) != -1) {
-                response.append(new String(bytes, 0, in));
-            }
-            return response.toString();
         }
     }
 
@@ -316,8 +212,6 @@ public class JavaBasedGraderHandler extends Thread {
         String assignmentName = title.substring(parenStart + 1, parenEnd);
         assignmentName = assignmentName.replace(" ", "");
         IGraderSetup setup = new GraderSetup(onyen, assignmentRoot, assignmentName);
-        Path submission = setup.setupFiles();
-        ZipReader.read(zip, submission.toFile());
         try {
             Future<String> grader = GraderPool.runGrader(setup.getCommandArgs());
 

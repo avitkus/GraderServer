@@ -1,10 +1,12 @@
 package server.htmlBuilder.form;
 
+import server.htmlBuilder.util.IEventful;
+
 /**
  * @author Andrew Vitkus
  *
  */
-public interface ISelect extends IFormField {
+public interface ISelect extends IFormField, IEventful {
 	public void addOption(IOption option);
 	public void addOptionGroup(IOptionGroup group);
 	public IOption[] getOptions();
