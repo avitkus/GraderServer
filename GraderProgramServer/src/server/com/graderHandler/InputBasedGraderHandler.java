@@ -49,6 +49,7 @@ public class InputBasedGraderHandler {
     private Path submission;
     private Path assignmentRoot;
     private Path submissionPath;
+    private Path userPath;
 
     public InputBasedGraderHandler() {
         assignmentRoot = Paths.get("graderProgram", "data");
@@ -73,11 +74,15 @@ public class InputBasedGraderHandler {
     public void setSubmission(Path submission) {
         this.submission = submission;
     }
+    
+    public void setUID(String uid) {
+        this.uid = uid;
+    }
 
-    public IHTMLFile process(Path file) throws GradingFailureException {
+    public IHTMLFile process() throws GradingFailureException {
         try {
             FileTreeManager.checkPurgeRoot();
-            boolean success = readSubmission(file);
+            boolean success = readSubmission();
             if (success) {
                 try {
                     grade();
@@ -103,48 +108,58 @@ public class InputBasedGraderHandler {
             }
         } catch (MalformedURLException e1) {
             LOG.log(Level.FINER, null, e1);
-            throw new GradingFailureException();
+            GradingFailureException e = new GradingFailureException();
+            e.setStackTrace(e1.getStackTrace());
+            throw e;
         } catch (IOException e1) {
             LOG.log(Level.FINER, null, e1);
-            throw new GradingFailureException();
+            GradingFailureException e = new GradingFailureException();
+            e.setStackTrace(e1.getStackTrace());
+            throw e;
         }
     }
 
-    private boolean readSubmission(Path file) {
+    private boolean readSubmission() {
         try {
+            int parenStart = title.indexOf('(');
+            int parenEnd = title.indexOf(')');
+            String assignmentName = title.substring(parenStart + 1, parenEnd);
+            assignmentName = assignmentName.replace(" ", "");
             int year = Calendar.getInstance().get(Calendar.YEAR);
 
-            assignmentRoot = assignmentRoot.resolve(Paths.get(Integer.toString(year), course, section, title));
-            submissionPath = assignmentRoot.resolve("(" + onyen + ")");
-            submissionPath = submissionPath.resolve(Paths.get("Submission attachment(s)").resolve(submission));
+            assignmentRoot = assignmentRoot.resolve(Paths.get(Integer.toString(year), course.replaceAll(" ", ""), section, assignmentName));
+            userPath = assignmentRoot.resolve("(" + onyen + ")");
+            String[] fileSplit = submission.getFileName().toString().split("\\.", 2);
+            submissionPath = userPath.resolve(Paths.get("Submission attachment(s)")).resolve(title + (fileSplit.length > 1 ? "." + fileSplit[1] : ""));
 
             try {
                 if (submissionPath.toFile().exists() && underSubmitLimit()) { // write backup of old zip if allowed
-                    Path zipBackupPath = submissionPath.resolve(Paths.get("Submission attachment(s)", title + ".zip.bak"));
-                    FileTreeManager.backup(submissionPath, zipBackupPath);
+                    Path backupPath = userPath.resolve(Paths.get("Submission attachment(s)", submissionPath.getFileName() + ".bak"));
+                    FileTreeManager.backup(submissionPath, backupPath);
                 }
             } catch (FileNotFoundException e) {
                 LOG.log(Level.FINER, null, e);
+            e.printStackTrace();
             } catch (IOException | SQLException e) {
+            e.printStackTrace();
                 LOG.log(Level.FINER, null, e);
             }
 
-            FileTreeManager.purgeSubmission(submissionPath);
-
-            submissionPath = submissionPath.resolve("Submission attachment(s)");
+            FileTreeManager.purgeSubmission(assignmentRoot);
 
             Files.createDirectories(submissionPath);
 
-            FileTreeManager.move(submission, submissionPath);
+            FileTreeManager.backup(submission, submissionPath);
             return true;
         } catch (IOException e) {
             LOG.log(Level.FINER, null, e);
+            e.printStackTrace();
             return false;
         }
     }
 
     private IHTMLFile createResponse(String title) throws FileNotFoundException, IOException {
-        File jsonFile = submissionPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile();
+        File jsonFile = userPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile();
         try {
             IResponseWriter responseWriter = new JSONBasedResponseWriter(jsonFile);
             responseWriter.setAssignmentName(title);
@@ -167,12 +182,11 @@ public class InputBasedGraderHandler {
         try (IDatabaseWriter dw = new DatabaseWriter(username, password, "jdbc:" + url);
                 IDatabaseReader dr = new DatabaseReader(username, password, "jdbc:" + url)) {
 
-            dw.writeUser(onyen, uid, pid, first, last);
+            //dw.writeUser(onyen, uid, pid, first, last);
 
             String num = title.substring(title.lastIndexOf(' ') + 1, title.length() - 1);
             String type = title.substring(title.lastIndexOf('(') + 1, title.lastIndexOf(' '));
-            String[] courseParts = course.split("-");
-            int courseID = dr.readCurrentCourseID(courseParts[0], courseParts[1]);
+            int courseID = dr.readCurrentCourseID(course, section);
             String assignmentName = dr.readAssignmentCatalogName(num, type, Integer.toString(courseID));
             int assignmentCatalogID = dr.readAssignmentCatalogID(num, assignmentName, type, Integer.toString(courseID));
             dw.writeAssignment(assignmentCatalogID, Integer.parseInt(uid));
@@ -180,7 +194,7 @@ public class InputBasedGraderHandler {
             int assignmentSubmissionID = dr.readLatestAssignmentSubmissionID(Integer.parseInt(uid), assignmentCatalogID);
             dw.writeResult(assignmentSubmissionID);
 
-            File jsonFile = submissionPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile();
+            File jsonFile = userPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile();
             if (!jsonFile.exists()) {
                 LOG.log(Level.WARNING, "Can't read json outpt from file: {0}", jsonFile.getAbsolutePath());
             } else {
@@ -213,17 +227,18 @@ public class InputBasedGraderHandler {
         assignmentName = assignmentName.replace(" ", "");
         IGraderSetup setup = new GraderSetup(onyen, assignmentRoot, assignmentName);
         try {
+            LOG.log(Level.INFO, "Args:\n{0}", setup.getCommandArgs());
             Future<String> grader = GraderPool.runGrader(setup.getCommandArgs());
 
             // log grader program output
-            Arrays.stream(grader.get().split("\n")).forEach((line) -> LOG.log(Level.INFO, "Grader_Program: {0}", line));
+            LOG.log(Level.INFO, "Grader_Program: {0}", grader.get());
         } catch (ExecutionException e) {
             LOG.log(Level.FINER, null, e);
         }
     }
 
     private void saveToGradesFile() throws FileNotFoundException, IOException, InterruptedException, ExecutionException {
-        File json = submissionPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile();
+        File json = userPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile();
         int points = 0;
         int possible = 0;
         if (json.exists()) {
@@ -248,7 +263,6 @@ public class InputBasedGraderHandler {
         int parenEnd = title.indexOf(')');
         String assignmentName = title.substring(parenStart + 1, parenEnd);
 
-        String[] courseParts = course.split("-");
         IConfigReader config = new ConfigReader("./config/config.properties");
         String username = config.getString("database.username");
         String password = config.getString("database.password");
@@ -259,7 +273,7 @@ public class InputBasedGraderHandler {
         try (DatabaseReader dr = new DatabaseReader(username, password, "jdbc:" + url)) {
             int num = Integer.parseInt(assignmentName.substring(assignmentName.lastIndexOf(' ') + 1)); // assignment number
             String type = assignmentName.substring(0, assignmentName.lastIndexOf(' ')); // assignment type
-            int courseID = dr.readCurrentCourseID(courseParts[0], courseParts[1]); // sql id of course
+            int courseID = dr.readCurrentCourseID(course, section); // sql id of course
             String name = dr.readAssignmentCatalogName(num, type, courseID); // sql name of assignment
             int assignmentCatalogID = dr.readAssignmentCatalogID(num, name, type, courseID); // sql id from assignment catalog
             int assignmentSubmissionID = dr.readLatestAssignmentSubmissionID(Integer.parseInt(uid), assignmentCatalogID); // sql id of assignment submissions

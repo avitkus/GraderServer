@@ -30,7 +30,7 @@ public class RequestParser implements IRequestParser {
                                 },
                                 (line) -> { // Values are after the colon separated by semicolons
                                     String[] values = line.substring(line.indexOf(':') + 1).split(";");
-                                    for(int i = 0; i < values.length; i ++) {
+                                    for (int i = 0; i < values.length; i++) {
                                         values[i] = values[i].trim();
                                     }
                                     return values;
@@ -69,10 +69,10 @@ public class RequestParser implements IRequestParser {
         }
         return split;
     }
-    
+
     private String getBoundary(Map<String, String[]> headers) throws IllegalBoundaryException {
         String[] contentType = headers.getOrDefault("Content-Type", new String[]{});
-        
+
         Optional<String> boundaryOpt = Arrays.stream(contentType).filter((value) -> value.startsWith("boundary")).findFirst();
         try {
             return boundaryOpt.orElseThrow(IllegalBoundaryException::new).split("=")[1];
@@ -80,7 +80,7 @@ public class RequestParser implements IRequestParser {
             throw new IllegalBoundaryException();
         }
     }
-    
+
     private HTTPMethod getMethod(String info) throws IllegalRequestMethodException {
         String[] parts = info.split("\\s");
         try {
@@ -89,7 +89,7 @@ public class RequestParser implements IRequestParser {
             throw new IllegalRequestMethodException();
         }
     }
-    
+
     private String getResource(String info) throws MalformedRequestLineException {
         String[] parts = info.split("\\s");
         try {
@@ -98,44 +98,44 @@ public class RequestParser implements IRequestParser {
             throw new MalformedRequestLineException();
         }
     }
-    
+
     private HTTPVersion getVersion(String info) throws IllegalRequestVersionException {
         String[] parts = info.split("\\s");
         try {
-        return HTTPVersion.valueOf(parts[2].replaceAll("[//.////]*", ""));
+            return HTTPVersion.valueOf(parts[2].replaceAll("[//.////]*", ""));
         } catch (ArrayIndexOutOfBoundsException | IllegalArgumentException e) {
             throw new IllegalRequestVersionException();
         }
     }
-    
+
     private BodyPartData[] getParts(String body, String boundary) {
-        String[] split = body.split("--"+boundary);
-        ArrayList<BodyPartData>  parts = new ArrayList<>(split.length);
-        for(int i = 1; i < split.length - 1; i ++) {
+        String[] split = body.split("--" + boundary);
+        ArrayList<BodyPartData> parts = new ArrayList<>(split.length);
+        for (int i = 1; i < split.length - 1; i++) {
             String[] partParts = split[i].split("\r\n\r\n", 2);
             String disposition = "";
             String type = "";
             String[] details = new String[]{};
             String data = "";
-      
-            System.out.println("==========");
-            
+
+            //System.out.println("==========");
+
             if (partParts.length == 2) {
                 String[] headerParts = partParts[0].split("[\r\n]+");
-                
-                for(String headerPart : headerParts) {
+
+                for (String headerPart : headerParts) {
                     if (!headerPart.isEmpty()) {
-                        System.out.println(headerPart);
-                        String[] partPartParts = magic(headerPart); // I'm so sorry for this naming...but that is what it is
-                        System.out.println(partPartParts[0]);
-                        switch (partPartParts[0]) {
-                           case "Content-Disposition":
-                               disposition = partPartParts[1];
-                               details = Arrays.copyOfRange(partPartParts, 2, partPartParts.length);
-                               break;
-                           case "Content-Type":
-                               type = partPartParts[1];
-                               break;
+                        //System.out.println(headerPart);
+                        String[] headerPartParts = magic(headerPart); // I'm so sorry for this naming...but that is what it is
+                        //System.out.println(headerPartParts[0]);
+                        switch (headerPartParts[0]) {
+                            case "Content-Disposition":
+                                disposition = headerPartParts[1];
+                                details = Arrays.copyOfRange(headerPartParts, 2, headerPartParts.length);
+                                break;
+                            case "Content-Type":
+                                type = headerPartParts[1];
+                                break;
                         }
                     }
                 }
@@ -144,7 +144,7 @@ public class RequestParser implements IRequestParser {
             if (data.endsWith("\r\n")) {
                 data = data.substring(0, data.length() - 2);
             }
-            
+
             //System.out.println(disposition + ", " + type + ", " + data + ", " + Arrays.toString(details));
             parts.add(new BodyPartData(disposition, type, details, data));
             //System.out.println("1:" + parts.get(parts.size() - 1).getData());
@@ -156,11 +156,13 @@ public class RequestParser implements IRequestParser {
         }
         return parts.toArray(new BodyPartData[parts.size()]);
     }
-    
+
     /**
-     * This splits up lines. I can't think of how to word it correctly, thus it performs magic.
-     * 
+     * This splits up lines. I can't think of how to word it correctly, thus it
+     * performs magic.
+     *
      * @param line
+     *
      * @return parts of the line
      */
     private String[] magic(String line) {
@@ -179,7 +181,7 @@ public class RequestParser implements IRequestParser {
         int check = semLoc >= 0 ? semLoc : args.endsWith("\r\n") ? len - 2 : len;
         parts.add(args.substring(0, check));
         args = args.substring(Math.min(check + 1, len));
-        
+
         StringBuilder thing = new StringBuilder(10);
         try (StringReader sr = new StringReader(args)) {
             boolean inQuot = false;
@@ -188,8 +190,8 @@ public class RequestParser implements IRequestParser {
 
             int prev = sr.read();
             int cur;
-            for(cur = sr.read(); cur != -1; cur = sr.read()) {
-                if(inQuot) {
+            for (cur = sr.read(); cur != -1; cur = sr.read()) {
+                if (inQuot) {
                     if (cur == '"') {
                         inQuot = false;
                         out = false;
@@ -198,7 +200,7 @@ public class RequestParser implements IRequestParser {
                             thing.setLength(0);
                         }
                     } else {
-                        thing.append((char)cur);
+                        thing.append((char) cur);
                     }
                 } else {
                     if (!outOkay) {
@@ -210,8 +212,8 @@ public class RequestParser implements IRequestParser {
                             thing.setLength(0);
                         }
                         inQuot = true;
-                    } else if (out && outOkay){
-                        thing.append((char)prev);
+                    } else if (out && outOkay) {
+                        thing.append((char) prev);
                     } else {
                         out = true;
                         outOkay = false;
@@ -220,43 +222,44 @@ public class RequestParser implements IRequestParser {
                 prev = cur;
             }
             if (prev != -1 && out) {
-                thing.append((char)prev);
+                thing.append((char) prev);
             }
             if (thing.length() > 0) {
                 parts.add(thing.toString());
             }
         } catch (IOException e) {
-            
+
         }
-        
+
         return parts.toArray(new String[parts.size()]);
     }
-    
+
     private class BodyPartData {
+
         private final String disposition;
         private final String type;
         private final String[] details;
         private final String data;
-        
+
         BodyPartData(String disposition, String type, String[] details, String data) {
             this.disposition = disposition;
             this.type = type;
             this.details = details;
             this.data = data;
         }
-        
+
         public String getDisposition() {
             return disposition;
         }
-        
+
         public String getType() {
             return type;
         }
-        
+
         public String[] getDetails() {
             return Arrays.copyOf(details, details.length);
         }
-        
+
         public String getData() {
             return data;
         }

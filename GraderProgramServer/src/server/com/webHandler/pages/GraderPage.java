@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import server.com.graderHandler.InputBasedGraderHandler;
+import server.com.graderHandler.util.GradingFailureException;
 import server.htmlBuilder.HTMLFile;
 import server.htmlBuilder.body.Body;
 import server.htmlBuilder.body.Header;
@@ -35,6 +37,8 @@ public class GraderPage extends HTMLFile implements IGraderPage {
     private String onyen;
     private String course;
     private String auth;
+    private String uid;
+    private String assignment;
 
     @Override
     public void setToGradeFile(Path fileLoc) {
@@ -57,10 +61,36 @@ public class GraderPage extends HTMLFile implements IGraderPage {
     }
 
     @Override
+    public void setAssignment(String assignment) {
+        this.assignment = assignment;
+    }
+    
+    @Override
+    public void setUID(String uid) {
+        this.uid = uid;
+    }
+
+    @Override
     public String getHTML() {
         setDoctype(new HTML5Doctype());
         buildParts();
-        return super.getHTML();
+        InputBasedGraderHandler grader = new InputBasedGraderHandler();
+        grader.setAssignment(assignment);
+        grader.setCourse(course.split("-")[0]);
+        grader.setSection(course.split("-")[1]);
+        grader.setOyen(onyen);
+        grader.setSubmission(fileLoc);
+        grader.setUID(uid);
+        
+        try {
+            //return super.getHTML();
+            System.out.println("grade");
+            return grader.process().getHTML();
+        } catch (GradingFailureException ex) {
+            ex.printStackTrace();
+            Logger.getLogger(GraderPage.class.getName()).log(Level.SEVERE, null, ex);
+            return super.getHTML();
+        }
     }
     
     private void buildParts() {

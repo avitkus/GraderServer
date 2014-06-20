@@ -6,8 +6,8 @@ import server.htmlBuilder.util.AttributeManager;
 import server.htmlBuilder.util.EventManager;
 import server.htmlBuilder.util.IAttributeManager;
 import server.htmlBuilder.util.IEventManager;
-import server.htmlBuilder.util.JavaScriptGenerator;
 import server.htmlBuilder.util.Offsetter;
+import server.htmlBuilder.util.ScriptGenerator;
 
 public class Select implements ISelect {
 
@@ -73,7 +73,8 @@ public class Select implements ISelect {
         if (!id.isEmpty()) {
             html.append(" id=\"").append(id).append("\"");
         }
-        html.append(attrs.getHTML()).append(">\n");
+        html.append(attrs.getHTML());
+        html.append(events.getHTML()).append(">\n");
         for (IHTMLElement option : options) {
             html.append(option.getText(depth)).append("\n");
         }
@@ -214,22 +215,22 @@ public class Select implements ISelect {
     }
 
     @Override
-    public void setOnload(JavaScriptGenerator script) {
+    public void setOnload(ScriptGenerator script) {
         events.addEvent("onload", script);
     }
 
     @Override
-    public JavaScriptGenerator getOnload() {
+    public ScriptGenerator getOnload() {
         return events.getEvent("onload");
     }
 
     @Override
-    public void setOnchange(JavaScriptGenerator script) {
+    public void setOnchange(ScriptGenerator script) {
         events.addEvent("onchange", script);
     }
 
     @Override
-    public JavaScriptGenerator getOnchange() {
+    public ScriptGenerator getOnchange() {
         return events.getEvent("onchange");
     }
 }

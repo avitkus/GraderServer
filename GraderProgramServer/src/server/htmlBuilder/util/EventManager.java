@@ -12,14 +12,14 @@ import java.util.Set;
  */
 public class EventManager implements IEventManager {
 
-    private final HashMap<String, JavaScriptGenerator> events;
+    private final HashMap<String, ScriptGenerator> events;
 
     public EventManager() {
         events = new HashMap<>(1);
     }
 
     @Override
-    public void addEvent(String trigger, JavaScriptGenerator script) {
+    public void addEvent(String trigger, ScriptGenerator script) {
         events.put(trigger, script);
     }
 
@@ -34,12 +34,12 @@ public class EventManager implements IEventManager {
     }
 
     @Override
-    public JavaScriptGenerator getEvent(String trigger) {
+    public ScriptGenerator getEvent(String trigger) {
         return events.get(trigger);
     }
 
     @Override
-    public Set<Map.Entry<String, JavaScriptGenerator>> getEvents() {
+    public Set<Map.Entry<String, ScriptGenerator>> getEvents() {
         return Collections.unmodifiableSet(events.entrySet());
     }
 

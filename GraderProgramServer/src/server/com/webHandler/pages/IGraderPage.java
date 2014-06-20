@@ -12,4 +12,6 @@ public interface IGraderPage extends IHTMLFile {
     public void setOnyen(String onyen);
     public void setCourse(String course);
     public void setAuth(String auth);
+    public void setAssignment(String assignment);
+    public void setUID(String uid);
 }

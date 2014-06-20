@@ -7,7 +7,6 @@ import server.htmlBuilder.IHTMLFile;
  *
  */
 public interface IUploadPage extends IHTMLFile {
-	public void setOnyen(String onyen);
 	public void setUser(String onyen);
 	public void setArgs(String args);
 	public void setAuth(String auth);

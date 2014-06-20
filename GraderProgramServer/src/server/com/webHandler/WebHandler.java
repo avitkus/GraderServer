@@ -152,13 +152,14 @@ public class WebHandler implements Runnable {
                 String icn = icon.toString();
                 return buildHeader(200, icn.length()) + icn;
             }
-        } else if (requestLine.contains(" /submit.html ") && request.contains("multipart")) {
+        } else if (requestLine.contains(" /submit.html ")) {// && request.contains("multipart")) {
             RequestParser parser = new RequestParser();
             //System.out.println("***----***\n" + request + "***----***");
             try {
                 IRequest requestObj = parser.parse(request);
                 if (requestObj.isMultipart()) {
-                    System.out.println("upload");
+                    System.out.println("submit");
+                    //System.out.println("+++++\n" + requestObj.getRequest() + "\n+++++");
                     GraderPageSetup gps = new GraderPageSetup();
                     IGraderPage page = gps.buildGraderPage(requestObj);
                     String html = page.getHTML();
@@ -170,20 +171,19 @@ public class WebHandler implements Runnable {
                 LOG.log(Level.SEVERE, null, ex);
                 return "";
             }
-        } else {
-            //System.out.println("not found");
-            INotFoundPage nfp = new NotFoundPage();
-            int pageStart = requestLine.indexOf(" /") + 2;
-            int pageEnd = requestLine.indexOf(' ', pageStart);
-            String page = requestLine.substring(pageStart, pageEnd);
-            if (page.isEmpty()) {
-                page = "index.html";
-            }
-            //System.out.println(page);
-            nfp.setPage(page);
-            String html = nfp.getHTML();
-            return buildHeader(404, html.length()) + html;
         }
+        //System.out.println("not found");
+        INotFoundPage nfp = new NotFoundPage();
+        int pageStart = requestLine.indexOf(" /") + 2;
+        int pageEnd = requestLine.indexOf(' ', pageStart);
+        String page = requestLine.substring(pageStart, pageEnd);
+        if (page.isEmpty()) {
+            page = "index.html";
+        }
+        //System.out.println(page);
+        nfp.setPage(page);
+        String html = nfp.getHTML();
+        return buildHeader(404, html.length()) + html;
     }
 
     private String buildHeader(int status, int length) {

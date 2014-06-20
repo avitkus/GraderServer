@@ -27,7 +27,9 @@ import server.htmlBuilder.body.LineBreak;
 import server.htmlBuilder.body.Span;
 import server.htmlBuilder.body.Text;
 import server.htmlBuilder.doctype.HTML5Doctype;
+import server.htmlBuilder.form.FieldSet;
 import server.htmlBuilder.form.Form;
+import server.htmlBuilder.form.IFieldSet;
 import server.htmlBuilder.form.IForm;
 import server.htmlBuilder.form.ILabel;
 import server.htmlBuilder.form.IOption;
@@ -39,6 +41,8 @@ import server.htmlBuilder.form.input.FileField;
 import server.htmlBuilder.form.input.IFileField;
 import server.htmlBuilder.form.input.ISubmitButton;
 import server.htmlBuilder.form.input.SubmitButton;
+import server.htmlBuilder.global.IScript;
+import server.htmlBuilder.global.Script;
 import server.htmlBuilder.head.Head;
 import server.htmlBuilder.head.ILink;
 import server.htmlBuilder.head.IMetaAttr;
@@ -46,6 +50,8 @@ import server.htmlBuilder.head.ITitle;
 import server.htmlBuilder.head.Link;
 import server.htmlBuilder.head.MetaAttr;
 import server.htmlBuilder.head.Title;
+import server.htmlBuilder.util.JavaScriptGenerator;
+import server.htmlBuilder.util.Offsetter;
 import server.utils.ConfigReader;
 import server.utils.IConfigReader;
 
@@ -70,16 +76,13 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         }
         authKey = auth.toString();
     }
-    private String onyen = "";
     private String user = "";
-    private String year = "";
-    private String season = "";
     private String auth = "";
     private boolean isAdmin;
 
     @Override
     public void setArgs(String args) {
-        System.out.println(args);
+        //System.out.println(args);
         String[] temp = args.split("\\s");
         args = temp[temp.length - 1];
         args = args.trim();
@@ -87,12 +90,7 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         String[] argList = args.split("&");
         //Arrays.stream(argList).forEach((str) -> System.out.println(str.length() + ": " + str));
         for (String arg : argList) {
-            if (arg.startsWith("onyen=")) {
-                String[] argSplit = arg.split("=");
-                if (argSplit.length > 1) {
-                    setOnyen(argSplit[1]);
-                }
-            } else if (arg.startsWith("user=")) {
+            if (arg.startsWith("user=")) {
                 String[] argSplit = arg.split("=");
                 if (argSplit.length > 1) {
                     setUser(argSplit[1]);
@@ -104,11 +102,6 @@ public class UploadPage extends HTMLFile implements IUploadPage {
                 }
             }
         }
-    }
-
-    @Override
-    public void setOnyen(String onyen) {
-        this.onyen = onyen.replace("+", " ");
     }
 
     @Override
@@ -135,7 +128,7 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         }
         LOG.log(Level.INFO, "Authenticated as user {0}", user);
     }
-    
+
     @Override
     public void setAuth(String auth) {
         this.auth = auth.replace("+", " ");
@@ -143,9 +136,9 @@ public class UploadPage extends HTMLFile implements IUploadPage {
 
     @Override
     public String getHTML() {
-        System.out.println(user);
-        System.out.println(auth);
-        System.out.println(authKey);
+        //System.out.println(user);
+        //System.out.println(auth);
+        //System.out.println(authKey);
         if (user.isEmpty() || !auth.equals(authKey)) {
             return "<html><head><title>fail</title></head><body><h1>failure</h1></body></html>";
         }
@@ -239,49 +232,107 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         bodyWrapper.addContent(content);
         body.addElement(bodyWrapper);
 
+        body.addElement(getUpdateScript());
+
         setBody(body);
     }
-    
+
     private IForm buildSubmitForm() throws FileNotFoundException, IOException {
         IDatabaseReader dr = new DatabaseReader();
         IForm form = new Form();
         ResultSet results = null;
-        try {  
+        try {
             IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
             dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
-            
 
             form.setMethod("post");
             form.setEncoding("multipart/form-data");
             form.setAction("upload_handler.php");
-            form.setID("upload-form");
+            form.setID("upload_form");
+            form.setName("upload_form");
             form.setClassName("center");
-            
-            if (isAdmin) {
-                form.addElement(buildDropDown(dr.getUsers(), "onyen", "onyen", "Onyen", onyen, true));
-            } else {
-                form.addElement(buildDropDown(new String[]{onyen}, "onyen", "Onyen", onyen, true));
-            }
-            form.addElement(new LineBreak());
 
-            form.addElement(buildDropDown(getCourseAndSectionList(), "course", "Course", "", true));
-            
+            IFieldSet submissionDataSet = new FieldSet();
+            submissionDataSet.setForm("upload_form");
+            submissionDataSet.setLegend("Submission Data");
+            submissionDataSet.setName("submission_data_set");
+            submissionDataSet.setClassName("center");
+            ISelect onyenSelect;
+
+            if (isAdmin) {
+                onyenSelect = buildDropDown(dr.getUsers(), "onyen", "onyen", "", true, "Choose an onyen.");
+            } else {
+                onyenSelect = buildDropDown(new String[]{user}, "onyen", user, true, "");
+            }
+
+            onyenSelect.setForm("upload_form");
+
+            ILabel onyenLabel = new Label();
+            onyenLabel.setLabel(new Text("Onyen"));
+            onyenLabel.setElementID("onyen");
+            onyenLabel.setForm("upload_form");
+
+            submissionDataSet.addField(onyenLabel);
+            submissionDataSet.addField(onyenSelect);
+            submissionDataSet.addField(new LineBreak());
+
+            ISelect courseSelect = buildDropDown(getCourseAndSectionList(), "course", "", true, "Choose a course.");
+            courseSelect.setOnchange(() -> "updateAssignments()");
+            courseSelect.setForm("upload_form");
+
+            ILabel courseLabel = new Label();
+            courseLabel.setLabel(new Text("Course"));
+            courseLabel.setElementID("course");
+            courseLabel.setForm("upload_form");
+
+            submissionDataSet.addField(courseLabel);
+            submissionDataSet.addField(courseSelect);
+            submissionDataSet.addField(new LineBreak());
+
+            ISelect typeSelect = buildDropDown(dr.getTypes(), "type", "name", "", true, "Choose an assignment type.");
+            typeSelect.setOnchange(() -> "updateAssignments()");
+            typeSelect.setForm("upload_form");
+
+            ILabel typeLabel = new Label();
+            typeLabel.setLabel(new Text("Type"));
+            typeLabel.setElementID("type");
+            typeLabel.setForm("upload_form");
+
+            submissionDataSet.addField(typeLabel);
+            submissionDataSet.addField(typeSelect);
+            submissionDataSet.addField(new LineBreak());
+
+            ISelect assignmentSelect = buildDropDown(new String[]{}, "assignment", "", true, "Choose an assignment.");
+            assignmentSelect.setForm("upload_form");
+
+            ILabel assignmentLabel = new Label();
+            assignmentLabel.setLabel(new Text("Assignment"));
+            assignmentLabel.setElementID("assignment");
+            assignmentLabel.setForm("upload_form");
+
+            submissionDataSet.addField(assignmentLabel);
+            submissionDataSet.addField(assignmentSelect);
+            submissionDataSet.addField(new LineBreak());
+
+            form.addElement(submissionDataSet);
+
             IFileField file = new FileField();
-            file.setForm("upload-form");
+            file.setForm("upload_form");
             file.setName("file");
-            file.setID("file-select");
+            file.setID("file_select");
             file.setRequired(true);
 
             ILabel fileLabel = new Label();
             fileLabel.setLabel(new Text("File"));
-            fileLabel.setForm("upload-form");
-            fileLabel.setElementID("file-select");
-            
+            fileLabel.setForm("upload_form");
+            fileLabel.setElementID("file_select");
+            fileLabel.setForm("upload_form");
+
             form.addElement(new LineBreak());
 
             ISubmitButton upload = new SubmitButton();
             upload.setValue("Upload");
-            upload.setForm("upload-form");
+            upload.setForm("upload_form");
             upload.setName("upload");
 
             form.addElement(fileLabel);
@@ -289,6 +340,7 @@ public class UploadPage extends HTMLFile implements IUploadPage {
             form.addElement(new LineBreak());
             form.addElement(upload);
         } catch (SQLException e) {
+            e.printStackTrace();
             LOG.log(Level.FINER, null, e);
         } finally {
             if (results != null) {
@@ -306,32 +358,24 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         }
         return form;
     }
-    
+
     private String[] getCourseAndSectionList() throws FileNotFoundException, IOException {
         IDatabaseReader dr = new DatabaseReader();
         ResultSet results = null;
         IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
         try {
             dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
-            results = dr.getTerms();
-            while(results.next()) {
-                if (results.getBoolean("current")) {
-                    year = Integer.toString(results.getInt("year"));
-                    season = results.getString("season");
-                }
-            }
-            results.close();
-            results = dr.getCourses(year, season);
+            results = dr.getCurrentCourses();
             ArrayList<String> courses = new ArrayList<>(5);
-            while(results.next()) {
+            while (results.next()) {
                 courses.add(results.getString("name"));
             }
             results.close();
             String[] courseNameArr = courses.toArray(new String[courses.size()]);
             courses.clear();
-            for(String name : courseNameArr) {
-                results = dr.getSections(name, year, season);
-                while(results.next()) {
+            for (String name : courseNameArr) {
+                results = dr.getCurrentSections(name);
+                while (results.next()) {
                     courses.add(name + "-" + results.getString("section"));
                 }
             }
@@ -357,52 +401,157 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         }
     }
 
-    private ILabel buildDropDown(ResultSet results, String id, String key, String name, String defaultVal, boolean required) throws SQLException {
+    private IScript getUpdateScript() {
+        IScript script = new Script();
+        JavaScriptGenerator scriptGen = () -> {
+            StringBuilder text = new StringBuilder(200);
+            text.append("var assignmentList = ").append(getAssignmentTable()).append(";\n")
+                    .append("var assignments = document.upload_form.assignment;\n")
+                    .append("var courses = document.upload_form.course;\n")
+                    .append("var types = document.upload_form.type;\n\n");
+            text.append("function updateAssignments() {\n")
+                    .append(Offsetter.indent(1)).append("\"use strict\";\n")
+                    .append(Offsetter.indent(1)).append("var i, assignmentName, defaultOption, courseSelection, typeSelection;\n\n")
+                    .append(Offsetter.indent(1)).append("typeSelection = types.selectedIndex - 1;\n")
+                    .append(Offsetter.indent(1)).append("courseSelection = courses.selectedIndex - 1;\n")
+                    .append(Offsetter.indent(1)).append("if (assignments.options.length === 1 && (typeSelection < 0 || courseSelection < 0)) {\n")
+                    .append(Offsetter.indent(2)).append("return;\n")
+                    .append(Offsetter.indent(1)).append("}\n")
+                    .append(Offsetter.indent(1)).append("defaultOption = assignments.options[0];\n")
+                    .append(Offsetter.indent(1)).append("assignments.options.length = 0;\n")
+                    .append(Offsetter.indent(1)).append("assignments.options[0] = defaultOption;\n")
+                    .append(Offsetter.indent(1)).append("if (typeSelection >= 0 && courseSelection >= 0) {\n")
+                    .append(Offsetter.indent(2)).append("for (i = 0; i < assignmentList[courseSelection][typeSelection].length; i += 1) {\n")
+                    .append(Offsetter.indent(3)).append("assignmentName = assignmentList[courseSelection][typeSelection][i];\n")
+                    .append(Offsetter.indent(3)).append("assignments.options[assignments.options.length] = new Option(assignmentName, assignmentName);\n")
+                    .append(Offsetter.indent(2)).append("}\n")
+                    .append(Offsetter.indent(1)).append("}\n")
+                    .append("}\n");
+            return text.toString();
+        };
+
+        script.setScript(scriptGen);
+
+        return script;
+    }
+
+    private String getAssignmentTable() {
+        StringBuilder assignments = new StringBuilder(500);
+        assignments.append("[");
+        ResultSet results = null;
+        try (IDatabaseReader dr = new DatabaseReader()) {
+            IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
+            dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
+            ArrayList<String> typesList = new ArrayList<>(3);
+            results = dr.getTypes();
+            while (results.next()) {
+                typesList.add(results.getString("name"));
+            }
+            results.close();
+            String[] types = typesList.toArray(new String[typesList.size()]);
+            String[] coursesAndSections = getCourseAndSectionList();
+
+            for (String courseAndSection : coursesAndSections) {
+                String[] parts = courseAndSection.split("-", 2);
+                String course = parts[0];
+                String section = parts[1];
+                assignments.append("[");
+                for (String type : types) {
+                    assignments.append("[");
+                    results = dr.getCurrentAssignments(type, course, section);
+                    String firstCapType = type.toLowerCase();
+                    firstCapType = firstCapType.substring(0, 1).toUpperCase().concat(firstCapType.substring(1));
+                    while (results.next()) {
+                        assignments.append("\"").append(results.getString("name")).append(" (").append(firstCapType).append(" ").append(results.getInt("number")).append(")\", ");
+                    }
+                    if (assignments.charAt(assignments.length() - 1) != '[') {
+                        assignments.delete(assignments.length() - 2, Integer.MAX_VALUE);
+                    }
+                    assignments.append("], ");
+                }
+                if (assignments.charAt(assignments.length() - 1) != '[') {
+                    assignments.delete(assignments.length() - 2, Integer.MAX_VALUE);
+                }
+                assignments.append("], ");
+            }
+            if (assignments.charAt(assignments.length() - 1) != '[') {
+                assignments.delete(assignments.length() - 2, Integer.MAX_VALUE);
+            }
+        } catch (Exception e) {
+            Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, e);
+            return "[]";
+        } finally {
+            if (results != null) {
+                try {
+                    results.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+        assignments.append("]");
+        return assignments.toString();
+    }
+
+    private ISelect buildDropDown(ResultSet results, String id, String key, String defaultVal, boolean required, String placeholder) throws SQLException {
         ISelect select = new Select();
         select.setRequired(required);
         select.setName(id);
+        select.setID(id);
 
-        IOption blank = new Option();
-        blank.setValue("");
-        select.addOption(blank);
+        if (required) {
+            IOption option = new Option();
+            option.setText(placeholder);
+            option.setValue("");
+            select.addOption(option);
+        }
+
+        boolean selected = false;
+
         while (results.next()) {
             String result = results.getString(key);
             IOption option = new Option();
             option.setText(result);
             option.setValue(result);
-            if (result.equals(defaultVal)) {
+            if (!selected && result.equals(defaultVal)) {
+                //System.out.println("Default selection: " + result);
                 option.setSelected(true);
+                selected = true;
             }
             select.addOption(option);
         }
-
-        ILabel assignmentLabel = new Label();
-        assignmentLabel.setLabel(new Text(name));
-        assignmentLabel.setElement(select);
         results.close();
-
-        return assignmentLabel;
+        //System.out.println("**" + id);
+        return select;
     }
 
-    private ILabel buildDropDown(String[] options, String id, String name, String defaultVal, boolean required) throws SQLException {
+    private ISelect buildDropDown(String[] options, String id, String defaultVal, boolean required, String placeholder) throws SQLException {
         ISelect select = new Select();
         select.setRequired(required);
         select.setName(id);
+        select.setID(id);
 
-        for (String s : options) {
+        if (required) {
             IOption option = new Option();
-            option.setText(s);
-            option.setValue(s);
-            if (s.equals(defaultVal)) {
-                option.setSelected(true);
-            }
+            option.setText(placeholder);
+            option.setValue("");
             select.addOption(option);
         }
 
-        ILabel assignmentLabel = new Label();
-        assignmentLabel.setLabel(new Text(name));
-        assignmentLabel.setElement(select);
+        boolean selected = false;
 
-        return assignmentLabel;
+        for (String optionValue : options) {
+            IOption option = new Option();
+            option.setText(optionValue);
+            option.setValue(optionValue);
+            if (!selected && optionValue.equals(defaultVal)) {
+                //System.out.println("Default selection: " + optionValue);
+                option.setSelected(true);
+                selected = true;
+            }
+            select.addOption(option);
+        }
+        //System.out.println("**" + id);
+        return select;
     }
 }

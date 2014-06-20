@@ -7,8 +7,8 @@ package server.htmlBuilder.util;
  * @author Andrew Vitkus
  */
 public interface IEventful {
-        public void setOnload(JavaScriptGenerator script);
-        public JavaScriptGenerator getOnload();
-        public void setOnchange(JavaScriptGenerator script);
-        public JavaScriptGenerator getOnchange();
+        public void setOnload(ScriptGenerator script);
+        public ScriptGenerator getOnload();
+        public void setOnchange(ScriptGenerator script);
+        public ScriptGenerator getOnchange();
 }

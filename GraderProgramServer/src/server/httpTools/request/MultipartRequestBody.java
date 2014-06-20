@@ -34,7 +34,7 @@ public abstract class MultipartRequestBody implements IRequestBody {
         if (bodyText.isEmpty()) {
             StringBuilder body = new StringBuilder(100);
             for(MultipartContent content : contents) {
-                body.append("--").append(boundary);
+                body.append("\r\n--").append(boundary).append("\r\n");
                 String dispostion = content.getDispositionType();
                 if (!dispostion.isEmpty()) {
                     body.append("Content-Disposition: ").append(content.getDispositionType());
