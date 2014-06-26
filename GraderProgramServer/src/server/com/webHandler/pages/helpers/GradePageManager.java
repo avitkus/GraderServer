@@ -2,16 +2,12 @@ package server.com.webHandler.pages.helpers;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -20,25 +16,36 @@ import java.util.logging.Logger;
 import org.apache.commons.validator.routines.InetAddressValidator;
 import server.htmlBuilder.IHTMLFile;
 
+/**
+ * This class keeps a record of pages and IP addresses associated with UUIDs.
+ *
+ * @author Andrew Vitkus
+ */
 public class GradePageManager {
 
     private static final Logger LOG = Logger.getLogger(GradePageManager.class.getName());
 
     private static final Duration lifetime;
-    private static final Map<String, PageHolder> pageMap;
+    private static final HashMap<String, PageHolder> pageMap;
 
     static {
-        pageMap = Collections.synchronizedMap(new HashMap<>(10));
-        lifetime = Duration.ofMinutes(1);
+        pageMap = new HashMap<>(10);
+        lifetime = Duration.ofMinutes(30);
         ScheduledExecutorService sec = Executors.newSingleThreadScheduledExecutor();
-        //ScheduledThreadPoolExecutor sec = new ScheduledThreadPoolExecutor(1);
         sec.scheduleAtFixedRate(new ManagerMonitor(), 60, 60, TimeUnit.SECONDS);
     }
 
+    /**
+     * Adds a new page to the manager with an associated IP address
+     *
+     * @param page the page to add
+     * @param ip   the IP address associated with the page
+     *
+     * @return the added page's UUID
+     */
     public static String add(IHTMLFile page, String ip) {
         Objects.requireNonNull(page, "The added grade page cannot be null.");
         String uuid = UUID.randomUUID().toString();
-        //System.out.println(uuid + ", " + ip);
         synchronized (pageMap) {
             pageMap.put(uuid, new PageHolder(page, ip));
         }
@@ -46,6 +53,14 @@ public class GradePageManager {
         return uuid;
     }
 
+    /**
+     * Gets the page associated with a UUID. If the page does not exist an
+     * empty optional is returned.
+     *
+     * @param key a UUID
+     *
+     * @return the page associated with the given UUID
+     */
     public static Optional<IHTMLFile> get(String key) {
         Objects.requireNonNull(key, "Grade page UUID cannot be null.");
         PageHolder holder;
@@ -58,6 +73,14 @@ public class GradePageManager {
         }
     }
 
+    /**
+     * Gets the IP associated with a UUID. If the page does not exist an empty
+     * optional is returned.
+     *
+     * @param key a UUID
+     *
+     * @return the IP associated with the given UUID
+     */
     public static Optional<String> getIP(String key) {
         Objects.requireNonNull(key, "Grade page UUID cannot be null.");
         synchronized (pageMap) {
@@ -70,6 +93,14 @@ public class GradePageManager {
         }
     }
 
+    /**
+     * Gets the timestamp associated with a UUID. If the page does not exist an
+     * empty optional is returned.
+     *
+     * @param key a UUID
+     *
+     * @return the timestamp associated with the given UUID
+     */
     public static Optional<Instant> getTimestamp(String key) {
         PageHolder holder;
         synchronized (pageMap) {
@@ -82,6 +113,11 @@ public class GradePageManager {
 
     }
 
+    /**
+     * Removes all pages from the manager.
+     *
+     * @return if the manager was changed
+     */
     public static boolean purge() {
         synchronized (pageMap) {
             LOG.log(Level.INFO, "Purging grading page register.");
@@ -96,6 +132,13 @@ public class GradePageManager {
         }
     }
 
+    /**
+     * Sets the timestamp associated with the given UUID to the current time.
+     *
+     * @param key a UUID
+     *
+     * @return if a timestamp was updated
+     */
     public static boolean refresh(String key) {
         Objects.requireNonNull(key, "Grade page UUID cannot be null.");
         synchronized (pageMap) {
@@ -109,6 +152,14 @@ public class GradePageManager {
         }
     }
 
+    /**
+     * Associates a new page with a UUID.
+     *
+     * @param key  a UUID
+     * @param page the new page
+     *
+     * @return if a page was updated
+     */
     public static boolean update(String key, IHTMLFile page) {
         Objects.requireNonNull(key, "Grade page UUID cannot be null.");
         Objects.requireNonNull(page, "The updated grade page cannot be null.");
@@ -126,6 +177,11 @@ public class GradePageManager {
     private GradePageManager() {
     }
 
+    /**
+     * This class removes any pages that have existed beyond their expiration.
+     * A page is expired if the timestamp is more than a certain time before
+     * the current time. All pages are compared to the same time.
+     */
     private static class ManagerMonitor implements Runnable {
 
         @Override
