@@ -6,7 +6,7 @@ import server.htmlBuilder.IHTMLElement;
  *
  * @author Andrew Vitkus
  */
-public interface INoScripts extends IGlobalElement {
+public interface INoScript extends IGlobalElement {
 
     public void addElement(IHTMLElement element);
 

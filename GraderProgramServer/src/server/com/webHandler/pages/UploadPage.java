@@ -46,9 +46,9 @@ import server.htmlBuilder.form.input.FileField;
 import server.htmlBuilder.form.input.IFileField;
 import server.htmlBuilder.form.input.ISubmitButton;
 import server.htmlBuilder.form.input.SubmitButton;
-import server.htmlBuilder.global.INoScripts;
+import server.htmlBuilder.global.INoScript;
 import server.htmlBuilder.global.IScript;
-import server.htmlBuilder.global.NoScripts;
+import server.htmlBuilder.global.NoScript;
 import server.htmlBuilder.global.Script;
 import server.htmlBuilder.head.Head;
 import server.htmlBuilder.head.ILink;
@@ -222,7 +222,7 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         content.addContent(new StudentDataNavBar());
         content.addContent(buildSubmitForm());
         
-        INoScripts noScriptNoteHolder = new NoScripts();
+        INoScript noScriptNoteHolder = new NoScript();
         IParagraph noScriptNote = new Paragraph();
         noScriptNote.setClassName("center");
         noScriptNote.addContent(new Text("The upload form relies on JavaScript to display the correct submission options. Either enable JavaScript for this page or use the Eclipe plugin to submit.", TextStyle.ITALIC));

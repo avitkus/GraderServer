@@ -10,14 +10,14 @@ import server.htmlBuilder.util.Offsetter;
  *
  * @author Andrew Vitkus
  */
-public class NoScripts implements INoScripts {
+public class NoScript implements INoScript {
 
     private final IAttributeManager attrs;
     private String className;
     private final ArrayList<IHTMLElement> elements;
     private String id;
 
-    public NoScripts() {
+    public NoScript() {
         attrs = new AttributeManager();
         elements = new ArrayList<>(3);
         className = "";
