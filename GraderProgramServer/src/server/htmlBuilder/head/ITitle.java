@@ -5,6 +5,8 @@ package server.htmlBuilder.head;
  *
  */
 public interface ITitle extends IHeadElement {
-	public String getTitle();
-	public void setTitle(String title);
+
+    public String getTitle();
+
+    public void setTitle(String title);
 }

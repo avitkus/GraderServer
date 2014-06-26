@@ -2,8 +2,8 @@ package org.json;
 
 /**
  * The JSONException is thrown by the JSON.org classes when things are amiss.
- * 
-* @author JSON.org
+ *
+ * @author JSON.org
  * @version 2013-02-10
  */
 public class JSONException extends RuntimeException {
@@ -13,7 +13,7 @@ public class JSONException extends RuntimeException {
 
     /**
      * Constructs a JSONException with an explanatory message.
-     *     
+     *
      * @param message Detail about the reason for the exception.
      */
     public JSONException(String message) {
@@ -31,10 +31,11 @@ public class JSONException extends RuntimeException {
     /**
      * Returns the cause of this exception or null if the cause is nonexistent
      * or unknown.
-     *     
+     *
      * @return the cause of this exception or null if the cause is nonexistent
      *         or unknown.
      */
+    @Override
     public Throwable getCause() {
         return this.cause;
     }

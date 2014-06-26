@@ -8,6 +8,8 @@ import server.htmlBuilder.util.IColorable;
  *
  */
 public interface IListItem extends IBodyElement, IColorable {
-	public void addContents(IBodyElement contents);
-	public IBodyElement[] getContents();
+
+    public void addContents(IBodyElement contents);
+
+    public IBodyElement[] getContents();
 }

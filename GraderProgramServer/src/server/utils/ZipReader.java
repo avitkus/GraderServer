@@ -12,7 +12,6 @@ import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-
 public class ZipReader {
 
     private static final String FILE_SEPARATOR = System.getProperty("file.separator");

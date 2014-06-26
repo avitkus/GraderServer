@@ -119,7 +119,6 @@ public class RequestParser implements IRequestParser {
             String data = "";
 
             //System.out.println("==========");
-
             if (partParts.length == 2) {
                 String[] headerParts = partParts[0].split("[\r\n]+");
 

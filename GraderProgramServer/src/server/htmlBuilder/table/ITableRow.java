@@ -8,6 +8,8 @@ import server.htmlBuilder.util.ITableStylable;
  *
  */
 public interface ITableRow extends IBodyElement, ITableStylable {
-	public void addDataPart(ITableData data);
-	public ITableData[] getDataParts();
+
+    public void addDataPart(ITableData data);
+
+    public ITableData[] getDataParts();
 }

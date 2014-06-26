@@ -7,6 +7,8 @@ import server.htmlBuilder.IHTMLFile;
  *
  */
 public interface INotFoundPage extends IHTMLFile {
-	public void setPage(String page);
-	public String getPage();
+
+    public void setPage(String page);
+
+    public String getPage();
 }

@@ -8,15 +8,16 @@ import java.util.Set;
  *
  */
 public interface IEventManager {
-	public void addEvent(String trigger, ScriptGenerator value);
-	
-	public void removeEvent(String trigger);
-	
-	public boolean hasEvent(String trigger);
-	
-	public ScriptGenerator getEvent(String trigger);
-	
-	public Set<Map.Entry<String,ScriptGenerator>> getEvents();
-	
-	public String getHTML();
+
+    public void addEvent(String trigger, ScriptGenerator value);
+
+    public void removeEvent(String trigger);
+
+    public boolean hasEvent(String trigger);
+
+    public ScriptGenerator getEvent(String trigger);
+
+    public Set<Map.Entry<String, ScriptGenerator>> getEvents();
+
+    public String getHTML();
 }

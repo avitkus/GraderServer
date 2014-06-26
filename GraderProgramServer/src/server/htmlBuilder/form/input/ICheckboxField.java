@@ -7,6 +7,8 @@ import server.htmlBuilder.form.input.IInput;
  *
  */
 public interface ICheckboxField extends IInput {
-	public void setChecked(boolean checked);
-	public boolean getChecked();
+
+    public void setChecked(boolean checked);
+
+    public boolean getChecked();
 }

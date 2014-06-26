@@ -54,9 +54,10 @@ import server.utils.IConfigReader;
 
 public class StudentDataStatisticsPage extends HTMLFile implements IStudentDataStatisticsPage {
 
+    private static final Logger LOG = Logger.getLogger(StudentDataStatisticsPage.class.getName());
+
     private static final String authKey;
     private static final boolean showAdminOnyen;
-    private static final Logger LOG = Logger.getLogger(StudentDataStatisticsPage.class.getName());
 
     static {
         StringBuilder auth = new StringBuilder(50);
@@ -68,24 +69,27 @@ public class StudentDataStatisticsPage extends HTMLFile implements IStudentDataS
 
         try {
             IConfigReader config = new ConfigReader("config/auth.properties");
-            auth = new StringBuilder(config.getString("database.view.authKey"));
-            adminOnyen = config.getBoolean("database.view.showAdminOnyen");
+            config.getString("database.view.authKey").ifPresent((key) -> {
+                auth.setLength(0);
+                auth.append(key);
+            });
+            adminOnyen = config.getBoolean("database.view.showAdminOnyen", false).get();
         } catch (IOException ex) {
-            Logger.getLogger(StudentDataStatisticsPage.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(StudentDataLookupPage.class.getName()).log(Level.SEVERE, null, ex);
         }
         authKey = auth.toString();
         showAdminOnyen = adminOnyen;
     }
-    private String onyen = "";
-    private String user = "";
-    private String course = "";
-    private String section = "";
-    private String year = "";
-    private String season = "";
     private String assignment = "";
-    private String type = "";
     private String auth = "";
+    private String course = "";
     private boolean isAdmin;
+    private String onyen = "";
+    private String season = "";
+    private String section = "";
+    private String type = "";
+    private String user = "";
+    private String year = "";
 
     @Override
     public void setArgs(String args) {
@@ -145,64 +149,19 @@ public class StudentDataStatisticsPage extends HTMLFile implements IStudentDataS
     }
 
     @Override
-    public void setOnyen(String onyen) {
-        this.onyen = onyen.replace("+", " ");
-    }
-
-    @Override
-    public void setUser(String user) {
-        this.user = user.replace("+", " ");
-        try {
-            IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
-            IDatabaseReader dr = new DatabaseReader();
-            dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
-
-            try (ResultSet admins = dr.getAdminForUser(user)) {
-                if (admins.isBeforeFirst()) {
-                    isAdmin = true;
-                }
-            }
-        } catch (SQLException | IOException e) {
-            LOG.log(Level.FINER, null, e);
-        }
-        LOG.log(Level.INFO, "Authenticated as user {0}", user);
-    }
-
-    @Override
-    public void setCourse(String name) {
-        course = name.replace("+", " ");
-    }
-
-    @Override
-    public void setSection(String section) {
-        this.section = section.replace("+", " ");
-    }
-
-    @Override
-    public void setYear(String year) {
-        this.year = year.replace("+", " ");
-    }
-
-    @Override
-    public void setSeason(String season) {
-        this.season = season.replace("+", " ");
-    }
-
-    @Override
     public void setAssignment(String assignment) {
         assignment = assignment.replace("%2C", ",");
         this.assignment = assignment.replace("+", " ");
     }
 
     @Override
-    public void setType(String type) {
-        type = type.replace("%2C", ",");
-        this.type = type.replace("+", " ");
+    public void setAuth(String auth) {
+        this.auth = auth.replace("+", " ");
     }
 
     @Override
-    public void setAuth(String auth) {
-        this.auth = auth.replace("+", " ");
+    public void setCourse(String name) {
+        course = name.replace("+", " ");
     }
 
     @Override
@@ -221,25 +180,82 @@ public class StudentDataStatisticsPage extends HTMLFile implements IStudentDataS
         return super.getHTML();
     }
 
-    private void buildParts() throws FileNotFoundException, IOException {
-        buildHead();
-        buildBody();
+    @Override
+    public void setOnyen(String onyen) {
+        this.onyen = onyen.replace("+", " ");
     }
 
-    private void buildHead() {
-        ITitle title = new Title("Student Grading Database Lookup");
+    @Override
+    public void setSeason(String season) {
+        this.season = season.replace("+", " ");
+    }
 
-        IMetaAttr charset = new MetaAttr();
-        charset.addAttribute("charset", "UTF-8");
+    @Override
+    public void setSection(String section) {
+        this.section = section.replace("+", " ");
+    }
 
-        ILink faviconLink = new Link();
-        faviconLink.setRelation("shortcut icon");
-        faviconLink.addLinkAttribtue("href", "favicon.ico");
-        faviconLink.addLinkAttribtue("type", "image/vnd.microsoft.icon");
+    @Override
+    public void setType(String type) {
+        type = type.replace("%2C", ",");
+        this.type = type.replace("+", " ");
+    }
 
-        setHead(new Head(title, charset, faviconLink));
+    @Override
+    public void setUser(String user) {
+        this.user = user.replace("+", " ");
+        try {
+            IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
+            IDatabaseReader dr = new DatabaseReader();
+            dr.connect(config.getString("database.username").orElseThrow(IllegalArgumentException::new),
+                    config.getString("database.password").orElseThrow(IllegalArgumentException::new),
+                    "jdbc:" + config.getString("database.url").orElseThrow(IllegalArgumentException::new));
 
-        addCSSFile("grader.css");
+            try (ResultSet admins = dr.getAdminForUser(user)) {
+                if (admins.isBeforeFirst()) {
+                    isAdmin = true;
+                }
+            }
+        } catch (SQLException | IOException e) {
+            LOG.log(Level.FINER, null, e);
+        }
+        LOG.log(Level.INFO, "Authenticated as user {0}", user);
+    }
+
+    @Override
+    public void setYear(String year) {
+        this.year = year.replace("+", " ");
+    }
+
+    private ITable buildAverageTable() throws FileNotFoundException, IOException {
+        IDatabaseReader dr = new DatabaseReader();
+        ITable table = new Table();
+        table.setClassName("center");
+        ResultSet results = null;
+        try {
+            IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
+            dr.connect(config.getString("database.username").orElseThrow(IllegalArgumentException::new),
+                    config.getString("database.password").orElseThrow(IllegalArgumentException::new),
+                    "jdbc:" + config.getString("database.url").orElseThrow(IllegalArgumentException::new));
+
+            if (!assignment.isEmpty() && !course.isEmpty()) {
+                results = dr.getResultsForAll(doShowOnyen() ? onyen : "", assignment, type, course, section, year, season);
+            }
+
+            ITableBuilder tb = new AverageTableBuilder(results, dr);
+            table = tb.getTable();
+        } catch (SQLException e) {
+            LOG.log(Level.FINER, null, e);
+        } finally {
+            if (results != null) {
+                try {
+                    results.close();
+                } catch (SQLException e) {
+                    LOG.log(Level.FINER, null, e);
+                }
+            }
+        }
+        return table;
     }
 
     private void buildBody() throws FileNotFoundException, IOException {
@@ -253,7 +269,9 @@ public class StudentDataStatisticsPage extends HTMLFile implements IStudentDataS
         try {
             IDatabaseReader dr = new DatabaseReader();
             IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
-            dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
+            dr.connect(config.getString("database.username").orElseThrow(IllegalArgumentException::new),
+                    config.getString("database.password").orElseThrow(IllegalArgumentException::new),
+                    "jdbc:" + config.getString("database.url").orElseThrow(IllegalArgumentException::new));
             ResultSet admins = dr.getAdminForUser(user);
             if (admins.first()) {
                 userInfo.addContent(new Text(user + "&ndash;admin"));
@@ -303,80 +321,6 @@ public class StudentDataStatisticsPage extends HTMLFile implements IStudentDataS
         body.addElement(bodyWrapper);
 
         setBody(body);
-    }
-
-    private ITable buildAverageTable() throws FileNotFoundException, IOException {
-        IDatabaseReader dr = new DatabaseReader();
-        ITable table = new Table();
-        table.setClassName("center");
-        ResultSet results = null;
-        try {
-            IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
-            dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
-
-            if (!assignment.isEmpty() && !course.isEmpty()) {
-                results = dr.getResultsForAll(doShowOnyen() ? onyen : "", assignment, type, course, section, year, season);
-            }
-
-            ITableBuilder tb = new AverageTableBuilder(results, dr);
-            table = tb.getTable();
-        } catch (SQLException e) {
-            LOG.log(Level.FINER, null, e);
-        } finally {
-            if (results != null) {
-                try {
-                    results.close();
-                } catch (SQLException e) {
-                    LOG.log(Level.FINER, null, e);
-                }
-            }
-        }
-        return table;
-    }
-
-    private IForm buildForm() throws FileNotFoundException, IOException {
-        IDatabaseReader dr = new DatabaseReader();
-        IForm form = new Form();
-        ResultSet results = null;
-        try {
-            IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
-            dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
-            form.setMethod("post");
-            form.setName("assignment_data");
-            form.setAction("https://classroom.cs.unc.edu/~vitkus/grader/statistics.php");
-
-            if (doShowOnyen()) {
-                form.addElement(buildDropDown(dr.getUsers(), "onyen", "onyen", "Onyen", onyen));
-            }
-
-            form.addElement(buildDropDown(dr.getTypes(), "type", "name", "Type", type));
-            form.addElement(buildDropDown(dr.getAssignments(type, course, section, year, season), "assignment", "name", "Name", assignment, true));
-            form.addElement(buildDropDown(dr.getCourses(year, season), "course", "name", "Course", course, true));
-            if (!course.isEmpty()) {
-                form.addElement(buildDropDown(dr.getSections(course, year, season), "section", "section", "Section", section));
-            }
-            form.addElement(buildDropDown(dr.getTerms(), "year", "year", "Year", year));
-            form.addElement(buildDropDown(dr.getTerms(), "season", "season", "Season", season));
-
-            ISubmitButton submit = new SubmitButton();
-            //submit.setForm("assignment_data");
-            submit.setName("assignment_data_submit");
-            submit.setValue("Submit");
-            form.addElement(submit);
-
-        } catch (SQLException e) {
-            LOG.log(Level.FINER, null, e);
-        } finally {
-            if (results != null) {
-                try {
-                    results.close();
-                } catch (SQLException e) {
-                    LOG.log(Level.FINER, null, e);
-                }
-            }
-        }
-
-        return form;
     }
 
     private ILabel buildDropDown(ResultSet results, String id, String key, String name, String defaultVal) throws SQLException {
@@ -435,7 +379,75 @@ public class StudentDataStatisticsPage extends HTMLFile implements IStudentDataS
 
         return assignmentLabel;
     }
-    
+
+    private IForm buildForm() throws FileNotFoundException, IOException {
+        IDatabaseReader dr = new DatabaseReader();
+        IForm form = new Form();
+        ResultSet results = null;
+        try {
+            IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
+            dr.connect(config.getString("database.username").orElseThrow(IllegalArgumentException::new),
+                    config.getString("database.password").orElseThrow(IllegalArgumentException::new),
+                    "jdbc:" + config.getString("database.url").orElseThrow(IllegalArgumentException::new));
+            form.setMethod("post");
+            form.setName("assignment_data");
+            form.setAction("https://classroom.cs.unc.edu/~vitkus/grader/statistics.php");
+
+            if (doShowOnyen()) {
+                form.addElement(buildDropDown(dr.getUsers(), "onyen", "onyen", "Onyen", onyen));
+            }
+
+            form.addElement(buildDropDown(dr.getTypes(), "type", "name", "Type", type));
+            form.addElement(buildDropDown(dr.getAssignments(type, course, section, year, season), "assignment", "name", "Name", assignment, true));
+            form.addElement(buildDropDown(dr.getCourses(year, season), "course", "name", "Course", course, true));
+            if (!course.isEmpty()) {
+                form.addElement(buildDropDown(dr.getSections(course, year, season), "section", "section", "Section", section));
+            }
+            form.addElement(buildDropDown(dr.getTerms(), "year", "year", "Year", year));
+            form.addElement(buildDropDown(dr.getTerms(), "season", "season", "Season", season));
+
+            ISubmitButton submit = new SubmitButton();
+            //submit.setForm("assignment_data");
+            submit.setName("assignment_data_submit");
+            submit.setValue("Submit");
+            form.addElement(submit);
+
+        } catch (SQLException e) {
+            LOG.log(Level.FINER, null, e);
+        } finally {
+            if (results != null) {
+                try {
+                    results.close();
+                } catch (SQLException e) {
+                    LOG.log(Level.FINER, null, e);
+                }
+            }
+        }
+
+        return form;
+    }
+
+    private void buildHead() {
+        ITitle title = new Title("Student Grading Database Lookup");
+
+        IMetaAttr charset = new MetaAttr();
+        charset.addAttribute("charset", "UTF-8");
+
+        ILink faviconLink = new Link();
+        faviconLink.setRelation("shortcut icon");
+        faviconLink.addLinkAttribtue("href", "favicon.ico");
+        faviconLink.addLinkAttribtue("type", "image/vnd.microsoft.icon");
+
+        setHead(new Head(title, charset, faviconLink));
+
+        addCSSFile("grader.css");
+    }
+
+    private void buildParts() throws FileNotFoundException, IOException {
+        buildHead();
+        buildBody();
+    }
+
     private boolean doShowOnyen() {
         return showAdminOnyen && isAdmin;
     }

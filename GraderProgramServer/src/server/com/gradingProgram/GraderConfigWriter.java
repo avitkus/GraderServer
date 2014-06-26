@@ -16,15 +16,15 @@ public class GraderConfigWriter implements IGraderConfigWriter {
     private static final String FILE_SEPARATOR = System.getProperty("file.separator");
     private static final Logger LOG = Logger.getLogger(GraderConfigWriter.class.getName());
 
-    private String projectRequirements;
     private String assignmentName;
     private String controller;
-    private String path;
-    private String startOnyen;
     private String endOnyen;
-    private int logging;
-    private String spreadsheetPath;
     private boolean frameworkGUI;
+    private int logging;
+    private String path;
+    private String projectRequirements;
+    private String spreadsheetPath;
+    private String startOnyen;
 
     public GraderConfigWriter() {
         projectRequirements = "";
@@ -39,13 +39,8 @@ public class GraderConfigWriter implements IGraderConfigWriter {
     }
 
     @Override
-    public void setProjectRequirements(String requirements) {
-        projectRequirements = requirements;
-    }
-
-    @Override
-    public String getProjectRequirements() {
-        return projectRequirements;
+    public String getAssignmentName() {
+        return assignmentName;
     }
 
     @Override
@@ -54,13 +49,82 @@ public class GraderConfigWriter implements IGraderConfigWriter {
     }
 
     @Override
-    public String getAssignmentName() {
-        return assignmentName;
+    public String[] getCommandArgs() {
+        ArrayList<String> args = new ArrayList<>(15);
+        args.add("--project-requirements");
+        args.add(projectRequirements);
+        //LOG.log(Level.INFO, "project.requirements = {0}", projectRequirements);
+        args.add("--project-name ");
+        args.add(assignmentName);
+        //LOG.log(Level.INFO, "project.name = {0}", assignmentName);
+        args.add("--grader-controller");
+        args.add(controller);
+        //LOG.log(Level.INFO, "grader.controller = {0}", controller);
+        if (!path.isEmpty()) {
+            args.add("--headless-path");
+            args.add(path);
+            //LOG.log(Level.INFO, "grader.headless.path = {0}", path);
+        }
+        if (!startOnyen.isEmpty()) {
+            args.add("--headless-start");
+            args.add(startOnyen);
+            //LOG.log(Level.INFO, "\"grader.headless.start = {0}", startOnyen);
+        }
+        if (!endOnyen.isEmpty()) {
+            args.add("--headless-end");
+            args.add(endOnyen);
+            //LOG.log(Level.INFO, "grader.headless.end = {0}", endOnyen);
+        }
+        if (logging != 0) {
+            args.add("--logger");
+            args.add(getLoggingStr());
+            //LOG.log(Level.INFO, "grader.logger = {0}", getLoggingStr());
+        }
+        if (frameworkGUI) {
+            args.add("--use-framework-gui");
+            //LOG.log(Level.INFO, "grader.controller.useFrameworkGUI = true");
+        } else {
+            args.add("--no-framework-gui");
+            //LOG.log(Level.INFO, "grader.controller.useFrameworkGUI = false");
+        }
+        
+        return args.toArray(new String[args.size()]);
     }
 
     @Override
-    public void setController(String name) {
-        controller = name;
+    public String getConfigText() {
+        StringBuilder config = new StringBuilder(200);
+        
+        config.append("project.requirements = ").append(projectRequirements).append("\n");
+        //LOG.log(Level.INFO, "project.requirements = {0}", projectRequirements);
+        config.append("project.name = ").append(assignmentName).append("\n");
+        //LOG.log(Level.INFO, "project.name = {0}", assignmentName);
+        config.append("grader.controller = ").append(controller).append("\n");
+        //LOG.log(Level.INFO, "grader.controller = {0}", controller);
+        if (!path.isEmpty()) {
+            config.append("grader.headless.path = ").append(path).append("\n");
+            //LOG.log(Level.INFO, "grader.headless.path = {0}", path);
+        }
+        if (!startOnyen.isEmpty()) {
+            config.append("grader.headless.start = ").append(startOnyen).append("\n");
+            //LOG.log(Level.INFO, "\"grader.headless.start = {0}", startOnyen);
+        }
+        if (!endOnyen.isEmpty()) {
+            config.append("grader.headless.end = ").append(endOnyen).append("\n");
+            //LOG.log(Level.INFO, "grader.headless.end = {0}", endOnyen);
+        }
+        if (logging != 0) {
+            config.append("grader.logger = ").append(getLoggingStr()).append("\n");
+            //LOG.log(Level.INFO, "grader.logger = {0}", getLoggingStr());
+        }
+        if (!spreadsheetPath.isEmpty()) {
+            config.append("grader.logger.spreadsheetFilename = ").append(spreadsheetPath).append("\n");
+            //LOG.log(Level.INFO, "grader.logger.spreadsheetFilename = {0}", spreadsheetPath);
+        }
+        config.append("grader.controller.useFrameworkGUI = ").append(frameworkGUI);
+        //LOG.log(Level.INFO, "grader.controller.useFrameworkGUI = {0}", frameworkGUI);
+        
+        return config.toString();
     }
 
     @Override
@@ -69,23 +133,13 @@ public class GraderConfigWriter implements IGraderConfigWriter {
     }
 
     @Override
-    public void setPath(String path) {
-        this.path = path;
+    public void setController(String name) {
+        controller = name;
     }
 
     @Override
-    public String getPath() {
-        return path;
-    }
-
-    @Override
-    public void setStartOnyen(String start) {
-        startOnyen = start;
-    }
-
-    @Override
-    public String getStartOnyen() {
-        return startOnyen;
+    public String getEndOnyen() {
+        return endOnyen;
     }
 
     @Override
@@ -94,8 +148,18 @@ public class GraderConfigWriter implements IGraderConfigWriter {
     }
 
     @Override
-    public String getEndOnyen() {
-        return endOnyen;
+    public boolean getFrameworkGUI() {
+        return frameworkGUI;
+    }
+
+    @Override
+    public void setFrameworkGUI(boolean frameworkGUI) {
+        this.frameworkGUI = frameworkGUI;
+    }
+
+    @Override
+    public int getLogging() {
+        return logging;
     }
 
     @Override
@@ -107,13 +171,23 @@ public class GraderConfigWriter implements IGraderConfigWriter {
     }
 
     @Override
-    public int getLogging() {
-        return logging;
+    public String getPath() {
+        return path;
     }
 
     @Override
-    public void setSpreadsheet(String path) {
-        spreadsheetPath = path;
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    @Override
+    public String getProjectRequirements() {
+        return projectRequirements;
+    }
+
+    @Override
+    public void setProjectRequirements(String requirements) {
+        projectRequirements = requirements;
     }
 
     @Override
@@ -122,49 +196,18 @@ public class GraderConfigWriter implements IGraderConfigWriter {
     }
 
     @Override
-    public void setFrameworkGUI(boolean frameworkGUI) {
-        this.frameworkGUI = frameworkGUI;
+    public void setSpreadsheet(String path) {
+        spreadsheetPath = path;
     }
 
     @Override
-    public boolean getFrameworkGUI() {
-        return frameworkGUI;
+    public String getStartOnyen() {
+        return startOnyen;
     }
 
     @Override
-    public String getConfigText() {
-        StringBuilder config = new StringBuilder(200);
-
-        config.append("project.requirements = ").append(projectRequirements).append("\n");
-        LOG.log(Level.INFO, "project.requirements = {0}", projectRequirements);
-        config.append("project.name = ").append(assignmentName).append("\n");
-        LOG.log(Level.INFO, "project.name = {0}", assignmentName);
-        config.append("grader.controller = ").append(controller).append("\n");
-        LOG.log(Level.INFO, "grader.controller = {0}", controller);
-        if (!path.isEmpty()) {
-            config.append("grader.headless.path = ").append(path).append("\n");
-            LOG.log(Level.INFO, "grader.headless.path = {0}", path);
-        }
-        if (!startOnyen.isEmpty()) {
-            config.append("grader.headless.start = ").append(startOnyen).append("\n");
-            LOG.log(Level.INFO, "\"grader.headless.start = {0}", startOnyen);
-        }
-        if (!endOnyen.isEmpty()) {
-            config.append("grader.headless.end = ").append(endOnyen).append("\n");
-            LOG.log(Level.INFO, "grader.headless.end = {0}", endOnyen);
-        }
-        if (logging != 0) {
-            config.append("grader.logger = ").append(getLoggingStr()).append("\n");
-            LOG.log(Level.INFO, "grader.logger = {0}", getLoggingStr());
-        }
-        if (!spreadsheetPath.isEmpty()) {
-            config.append("grader.logger.spreadsheetFilename = ").append(spreadsheetPath).append("\n");
-            LOG.log(Level.INFO, "grader.logger.spreadsheetFilename = {0}", spreadsheetPath);
-        }
-        config.append("grader.controller.useFrameworkGUI = ").append(frameworkGUI);
-        LOG.log(Level.INFO, "grader.controller.useFrameworkGUI = {0}", frameworkGUI);
-
-        return config.toString();
+    public void setStartOnyen(String start) {
+        startOnyen = start;
     }
 
     @Override
@@ -213,48 +256,5 @@ public class GraderConfigWriter implements IGraderConfigWriter {
         }
 
         return str.toString();
-    }
-
-    @Override
-    public String[] getCommandArgs() {
-        ArrayList<String> args = new ArrayList<>(15);
-        args.add("--project-requirements");
-        args.add(projectRequirements);
-        LOG.log(Level.INFO, "project.requirements = {0}", projectRequirements);
-        args.add("--project-name ");
-        args.add(assignmentName);
-        LOG.log(Level.INFO, "project.name = {0}", assignmentName);
-        args.add("--grader-controller");
-        args.add(controller);
-        LOG.log(Level.INFO, "grader.controller = {0}", controller);
-        if (!path.isEmpty()) {
-            args.add("--headless-path");
-            args.add(path);
-            LOG.log(Level.INFO, "grader.headless.path = {0}", path);
-        }
-        if (!startOnyen.isEmpty()) {
-            args.add("--headless-start");
-            args.add(startOnyen);
-            LOG.log(Level.INFO, "\"grader.headless.start = {0}", startOnyen);
-        }
-        if (!endOnyen.isEmpty()) {
-            args.add("--headless-end");
-            args.add(endOnyen);
-            LOG.log(Level.INFO, "grader.headless.end = {0}", endOnyen);
-        }
-        if (logging != 0) {
-            args.add("--logger");
-            args.add(getLoggingStr());
-            LOG.log(Level.INFO, "grader.logger = {0}", getLoggingStr());
-        }
-        if (frameworkGUI) {
-            args.add("--use-framework-gui");
-        LOG.log(Level.INFO, "grader.controller.useFrameworkGUI = true");
-        } else {
-            args.add("--no-framework-gui");
-        LOG.log(Level.INFO, "grader.controller.useFrameworkGUI = false");
-        }
-
-        return args.toArray(new String[args.size()]);
     }
 }

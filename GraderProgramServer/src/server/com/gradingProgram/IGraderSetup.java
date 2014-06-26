@@ -9,7 +9,10 @@ import java.nio.file.Path;
  *
  */
 public interface IGraderSetup {
-	public Path setupFiles() throws IOException;
-	public void writeConfig() throws FileNotFoundException, IOException;
-	public String[] getCommandArgs();
+
+    public Path setupFiles() throws IOException;
+
+    public void writeConfig() throws FileNotFoundException, IOException;
+
+    public String[] getCommandArgs();
 }

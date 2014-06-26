@@ -19,6 +19,7 @@ import server.htmlBuilder.util.Offsetter;
 import server.htmlBuilder.util.StyleManager;
 
 public class SeparatedNavigationBar implements INavigationBar {
+
     private final ArrayList<IHyperlink> contents;
     private final IStyleManager styleManager;
     private final IAttributeManager attrs;
@@ -35,19 +36,19 @@ public class SeparatedNavigationBar implements INavigationBar {
 
         contents.addAll(Arrays.asList(elements));
     }
-    
+
     @Override
     public void addLink(String display, String dest) {
         addLink(display, dest, LinkTarget.PARENT);
     }
-    
+
     @Override
     public void addLink(String display, String dest, LinkTarget target) {
         IHyperlink link = new Hyperlink();
         link.addContent(new Text(display));
         link.setURL(dest);
         link.setTarget(target);
-        
+
         addLink(link);
     }
 

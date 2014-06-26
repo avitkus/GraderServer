@@ -8,26 +8,26 @@ import server.htmlBuilder.form.input.Input;
  */
 public class RadioButton extends Input implements IRadioButton {
 
-	/**
-	 * 
-	 */
-	public RadioButton() {
-		super();
-		setType("radio");
-	}
-	
-	@Override
-	public void setChecked(boolean checked) {
-		if(checked) {
-			addAttribute("checked", null);
-		} else {
-			removeAttribute("checked");
-		}
-	}
+    /**
+     *
+     */
+    public RadioButton() {
+        super();
+        setType("radio");
+    }
 
-	@Override
-	public boolean getChecked() {
-		return Boolean.parseBoolean(getAttribute("checked"));
-	}
+    @Override
+    public void setChecked(boolean checked) {
+        if (checked) {
+            addAttribute("checked", null);
+        } else {
+            removeAttribute("checked");
+        }
+    }
+
+    @Override
+    public boolean getChecked() {
+        return Boolean.parseBoolean(getAttribute("checked"));
+    }
 
 }

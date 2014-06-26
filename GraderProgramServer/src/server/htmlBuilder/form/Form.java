@@ -8,144 +8,144 @@ import server.htmlBuilder.util.IAttributeManager;
 import server.htmlBuilder.util.Offsetter;
 
 /**
- * 
+ *
  * @author Andrew Vitkus
  *
  */
 public class Form implements IForm {
-	private IAttributeManager attrs;
-	private ArrayList<IBodyElement> elements;
-	private String className;
-	public String id;
-	
-	public Form() {
-		attrs = new AttributeManager();
-		elements = new ArrayList<>();
-		className = "";
-		id = "";
-	}
-	
-	@Override
-	public String getText(int depth) {
-		StringBuilder html = new StringBuilder();
-		html.append(Offsetter.indent(depth++)).append("<form");
-		if (className != "") {
-			html.append(" class=\"").append(className).append("\"");
-		}
-		if (id != "") {
-			html.append(" id=\"").append(id).append("\"");
-		}
-		html.append(attrs.getHTML()).append(">\n");
-		for(IBodyElement element : elements) {
-			html.append(element.getText(depth)).append("\n");
-		}
-		html.append(Offsetter.indent(depth - 1)).append("</form>");
-		return html.toString();
-	}
 
-	@Override
-	public String getTagType() {
-		return "form";
-	}
+    private IAttributeManager attrs;
+    private ArrayList<IBodyElement> elements;
+    private String className;
+    public String id;
 
-	@Override
-	public void addElement(IBodyElement element) {
-		elements.add(element);
-	}
+    public Form() {
+        attrs = new AttributeManager();
+        elements = new ArrayList<>();
+        className = "";
+        id = "";
+    }
 
-	@Override
-	public IBodyElement[] getElements() {
-		return elements.toArray(new IBodyElement[elements.size()]);
-	}
+    @Override
+    public String getText(int depth) {
+        StringBuilder html = new StringBuilder();
+        html.append(Offsetter.indent(depth++)).append("<form");
+        if (className != "") {
+            html.append(" class=\"").append(className).append("\"");
+        }
+        if (id != "") {
+            html.append(" id=\"").append(id).append("\"");
+        }
+        html.append(attrs.getHTML()).append(">\n");
+        for (IBodyElement element : elements) {
+            html.append(element.getText(depth)).append("\n");
+        }
+        html.append(Offsetter.indent(depth - 1)).append("</form>");
+        return html.toString();
+    }
 
-	@Override
-	public void setAction(String url) {
-		attrs.addAttribute("action", url);
-	}
+    @Override
+    public String getTagType() {
+        return "form";
+    }
 
-	@Override
-	public String getAction() {
-		return attrs.getAttribute("action");
-	}
+    @Override
+    public void addElement(IBodyElement element) {
+        elements.add(element);
+    }
 
-	@Override
-	public void setEncoding(String encoding) {
-		attrs.addAttribute("enctype", encoding);
-	}
+    @Override
+    public IBodyElement[] getElements() {
+        return elements.toArray(new IBodyElement[elements.size()]);
+    }
 
-	@Override
-	public String getEncoding() {
-		return attrs.getAttribute("enctype");
-	}
+    @Override
+    public void setAction(String url) {
+        attrs.addAttribute("action", url);
+    }
 
-	@Override
-	public void setMethod(String method) {
-		attrs.addAttribute("method", method);
-	}
+    @Override
+    public String getAction() {
+        return attrs.getAttribute("action");
+    }
 
-	@Override
-	public String getMethod() {
-		return attrs.getAttribute("method");
-	}
+    @Override
+    public void setEncoding(String encoding) {
+        attrs.addAttribute("enctype", encoding);
+    }
 
-	@Override
-	public void setName(String name) {
-		attrs.addAttribute("name", name);
-	}
+    @Override
+    public String getEncoding() {
+        return attrs.getAttribute("enctype");
+    }
 
-	@Override
-	public String getName() {
-		return attrs.getAttribute("name");
-	}
+    @Override
+    public void setMethod(String method) {
+        attrs.addAttribute("method", method);
+    }
 
-	@Override
-	public void setTarget(String target) {
-		attrs.addAttribute("target", target);
-	}
+    @Override
+    public String getMethod() {
+        return attrs.getAttribute("method");
+    }
 
-	@Override
-	public String getTarget() {
-		return attrs.getAttribute("target");
-	}
+    @Override
+    public void setName(String name) {
+        attrs.addAttribute("name", name);
+    }
 
-	@Override
-	public void addAttribute(String name, String value) {
-		attrs.addAttribute(name, value);
-	}
-	
-	@Override
-	public void removeAttribute(String name) {
-		attrs.removeAttribute(name);
-	}
+    @Override
+    public String getName() {
+        return attrs.getAttribute("name");
+    }
 
-	@Override
-	public String getAttribute(String name) {
-		return attrs.getAttribute(name);
-	}
+    @Override
+    public void setTarget(String target) {
+        attrs.addAttribute("target", target);
+    }
 
-	@Override
-	public String[][] getAttributes() {
-		return attrs.getAttributes();
-	}
+    @Override
+    public String getTarget() {
+        return attrs.getAttribute("target");
+    }
 
+    @Override
+    public void addAttribute(String name, String value) {
+        attrs.addAttribute(name, value);
+    }
 
-	@Override
-	public void setClassName(String className) {
-		this.className = className;
-	}
+    @Override
+    public void removeAttribute(String name) {
+        attrs.removeAttribute(name);
+    }
 
-	@Override
-	public String getClassName() {
-		return className;
-	}
+    @Override
+    public String getAttribute(String name) {
+        return attrs.getAttribute(name);
+    }
 
-	@Override
-	public void setID(String id) {
-		this.id = id;
-	}
+    @Override
+    public String[][] getAttributes() {
+        return attrs.getAttributes();
+    }
 
-	@Override
-	public String getID() {
-		return id;
-	}
+    @Override
+    public void setClassName(String className) {
+        this.className = className;
+    }
+
+    @Override
+    public String getClassName() {
+        return className;
+    }
+
+    @Override
+    public void setID(String id) {
+        this.id = id;
+    }
+
+    @Override
+    public String getID() {
+        return id;
+    }
 }

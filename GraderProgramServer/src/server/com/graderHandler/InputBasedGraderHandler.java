@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -30,6 +29,7 @@ import server.com.graderHandler.util.JSONReader;
 import server.com.gradingProgram.GraderPool;
 import server.com.gradingProgram.GraderSetup;
 import server.com.gradingProgram.IGraderSetup;
+import server.com.webHandler.pages.helpers.GradePageManager;
 import server.htmlBuilder.IHTMLFile;
 import server.utils.ConfigReader;
 import server.utils.IConfigReader;
@@ -38,43 +38,74 @@ public class InputBasedGraderHandler {
 
     private static final Logger LOG = Logger.getLogger(InputBasedGraderHandler.class.getName());
 
-    private String title;
-    private String course;
-    private String section;
-    private String onyen;
-    private String uid;
-    private String first;
-    private String last;
-    private String pid;
-    private Path submission;
     private Path assignmentRoot;
+    private String course;
+    private String first;
+    private String firstName;
+    private String last;
+    private String lastName;
+    private String onyen;
+    private String pageUUID;
+    private String pid;
+    private String section;
+    private Path submission;
     private Path submissionPath;
+    private String title;
+    private String uid;
     private Path userPath;
 
     public InputBasedGraderHandler() {
         assignmentRoot = Paths.get("graderProgram", "data");
     }
 
+    public void setAssignment(String name) {
+        this.title = name;
+    }
+
     public void setCourse(String course) {
         this.course = course;
     }
 
-    public void setSection(String section) {
-        this.section = section;
+    public void setFirst(String first) {
+        this.first = first;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public void setLast(String last) {
+        this.last = last;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public void setOnyen(String onyen) {
+        this.onyen = onyen;
     }
 
     public void setOyen(String onyen) {
         this.onyen = onyen;
     }
 
-    public void setAssignment(String name) {
-        this.title = name;
+    public void setPID(String pid) {
+        this.pid = pid;
+    }
+
+    public void setPageUUID(String uuid) {
+        this.pageUUID = uuid;
+    }
+
+    public void setSection(String section) {
+        this.section = section;
     }
 
     public void setSubmission(Path submission) {
         this.submission = submission;
     }
-    
+
     public void setUID(String uid) {
         this.uid = uid;
     }
@@ -84,6 +115,9 @@ public class InputBasedGraderHandler {
             FileTreeManager.checkPurgeRoot();
             boolean success = readSubmission();
             if (success) {
+                if (onyen != null && uid != null && pid != null && firstName != null && lastName != null) {
+                    addUser();
+                }
                 try {
                     grade();
                 } catch (InterruptedException e1) {
@@ -102,6 +136,9 @@ public class InputBasedGraderHandler {
                 } catch (SQLException e) {
                     LOG.log(Level.FINER, null, e);
                 }
+                IHTMLFile gradingResult = createResponse(title);
+                GradePageManager.refresh(pageUUID);
+                GradePageManager.update(pageUUID, gradingResult);
                 return createResponse(title);
             } else {
                 throw new GradingFailureException();
@@ -116,52 +153,37 @@ public class InputBasedGraderHandler {
             GradingFailureException e = new GradingFailureException();
             e.setStackTrace(e1.getStackTrace());
             throw e;
+        } catch (SQLException ex) {
+            Logger.getLogger(InputBasedGraderHandler.class.getName()).log(Level.SEVERE, null, ex);
+            GradingFailureException e = new GradingFailureException();
+            e.setStackTrace(ex.getStackTrace());
+            throw e;
         }
     }
 
-    private boolean readSubmission() {
-        try {
-            int parenStart = title.indexOf('(');
-            int parenEnd = title.indexOf(')');
-            String assignmentName = title.substring(parenStart + 1, parenEnd);
-            assignmentName = assignmentName.replace(" ", "");
-            int year = Calendar.getInstance().get(Calendar.YEAR);
+    public void setName(String first, String last) {
+        firstName = first;
+        lastName = last;
+    }
 
-            assignmentRoot = assignmentRoot.resolve(Paths.get(Integer.toString(year), course.replaceAll(" ", ""), section, assignmentName));
-            userPath = assignmentRoot.resolve("(" + onyen + ")");
-            String[] fileSplit = submission.getFileName().toString().split("\\.", 2);
-            submissionPath = userPath.resolve(Paths.get("Submission attachment(s)")).resolve(title + (fileSplit.length > 1 ? "." + fileSplit[1] : ""));
+    private void addUser() throws IOException, SQLException {
+        IConfigReader config = new ConfigReader("./config/config.properties");
+        String username = config.getString("database.username").orElseThrow(IllegalArgumentException::new);
+        String password = config.getString("database.password").orElseThrow(IllegalArgumentException::new);
+        String url = config.getString("database.url").orElseThrow(IllegalArgumentException::new);
+        if (config.getBoolean("database.ssl", false).get()) {
+            url += "?verifyServerCertificate=true&useSSL=true&requireSSL=true";
+        }
 
-            try {
-                if (submissionPath.toFile().exists() && underSubmitLimit()) { // write backup of old zip if allowed
-                    Path backupPath = userPath.resolve(Paths.get("Submission attachment(s)", submissionPath.getFileName() + ".bak"));
-                    FileTreeManager.backup(submissionPath, backupPath);
-                }
-            } catch (FileNotFoundException e) {
-                LOG.log(Level.FINER, null, e);
-            e.printStackTrace();
-            } catch (IOException | SQLException e) {
-            e.printStackTrace();
-                LOG.log(Level.FINER, null, e);
-            }
-
-            FileTreeManager.purgeSubmission(assignmentRoot);
-
-            Files.createDirectories(submissionPath);
-
-            FileTreeManager.backup(submission, submissionPath);
-            return true;
-        } catch (IOException e) {
-            LOG.log(Level.FINER, null, e);
-            e.printStackTrace();
-            return false;
+        try (IDatabaseWriter dw = new DatabaseWriter(username, password, "jdbc:" + url)) {
+            dw.writeUser(onyen, uid, pid, firstName, lastName);
         }
     }
 
     private IHTMLFile createResponse(String title) throws FileNotFoundException, IOException {
         File jsonFile = userPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile();
         try {
-            IResponseWriter responseWriter = new JSONBasedResponseWriter(jsonFile);
+            IResponseWriter responseWriter = new JSONBasedResponseWriter(jsonFile, true);
             responseWriter.setAssignmentName(title);
             return responseWriter.getResponse();
         } catch (FileNotFoundException e) {
@@ -170,12 +192,29 @@ public class InputBasedGraderHandler {
         }
     }
 
+    private void grade() throws IOException, InterruptedException {
+        int parenStart = title.indexOf('(');
+        int parenEnd = title.indexOf(')');
+        String assignmentName = title.substring(parenStart + 1, parenEnd);
+        assignmentName = assignmentName.replace(" ", "");
+        IGraderSetup setup = new GraderSetup(onyen, assignmentRoot, assignmentName);
+        try {
+            //LOG.log(Level.INFO, "Args:\n{0}", setup.getCommandArgs());
+            Future<String> grader = GraderPool.runGrader(setup.getCommandArgs());
+
+            // log grader program output
+            LOG.log(Level.INFO, "Grader_Program: {0}", grader.get());
+        } catch (ExecutionException e) {
+            LOG.log(Level.FINER, null, e);
+        }
+    }
+
     private void postToDatabase() throws SQLException, FileNotFoundException, IOException {
         IConfigReader config = new ConfigReader("./config/config.properties");
-        String username = config.getString("database.username");
-        String password = config.getString("database.password");
-        String url = config.getString("database.url");
-        if (config.getBoolean("database.ssl")) {
+        String username = config.getString("database.username").orElseThrow(IllegalArgumentException::new);
+        String password = config.getString("database.password").orElseThrow(IllegalArgumentException::new);
+        String url = config.getString("database.url").orElseThrow(IllegalArgumentException::new);
+        if (config.getBoolean("database.ssl", false).get()) {
             url += "?verifyServerCertificate=true&useSSL=true&requireSSL=true";
         }
 
@@ -183,7 +222,6 @@ public class InputBasedGraderHandler {
                 IDatabaseReader dr = new DatabaseReader(username, password, "jdbc:" + url)) {
 
             //dw.writeUser(onyen, uid, pid, first, last);
-
             String num = title.substring(title.lastIndexOf(' ') + 1, title.length() - 1);
             String type = title.substring(title.lastIndexOf('(') + 1, title.lastIndexOf(' '));
             int courseID = dr.readCurrentCourseID(course, section);
@@ -220,20 +258,42 @@ public class InputBasedGraderHandler {
         }
     }
 
-    private void grade() throws IOException, InterruptedException {
-        int parenStart = title.indexOf('(');
-        int parenEnd = title.indexOf(')');
-        String assignmentName = title.substring(parenStart + 1, parenEnd);
-        assignmentName = assignmentName.replace(" ", "");
-        IGraderSetup setup = new GraderSetup(onyen, assignmentRoot, assignmentName);
+    private boolean readSubmission() {
         try {
-            LOG.log(Level.INFO, "Args:\n{0}", setup.getCommandArgs());
-            Future<String> grader = GraderPool.runGrader(setup.getCommandArgs());
+            int parenStart = title.indexOf('(');
+            int parenEnd = title.indexOf(')');
+            String assignmentName = title.substring(parenStart + 1, parenEnd);
+            assignmentName = assignmentName.replace(" ", "");
+            int year = Calendar.getInstance().get(Calendar.YEAR);
 
-            // log grader program output
-            LOG.log(Level.INFO, "Grader_Program: {0}", grader.get());
-        } catch (ExecutionException e) {
+            assignmentRoot = assignmentRoot.resolve(Paths.get(Integer.toString(year), course.replaceAll(" ", ""), section, assignmentName));
+            userPath = assignmentRoot.resolve("(" + onyen + ")");
+            String[] fileSplit = submission.getFileName().toString().split("\\.", 2);
+            submissionPath = userPath.resolve(Paths.get("Submission attachment(s)")).resolve(title + (fileSplit.length > 1 ? "." + fileSplit[1] : ""));
+
+            try {
+                if (submissionPath.toFile().exists() && underSubmitLimit()) { // write backup of old zip if allowed
+                    Path backupPath = userPath.resolve(Paths.get("Submission attachment(s)", submissionPath.getFileName() + ".bak"));
+                    FileTreeManager.backup(submissionPath, backupPath);
+                }
+            } catch (FileNotFoundException e) {
+                LOG.log(Level.FINER, null, e);
+                e.printStackTrace();
+            } catch (IOException | SQLException e) {
+                e.printStackTrace();
+                LOG.log(Level.FINER, null, e);
+            }
+
+            FileTreeManager.purgeSubmission(assignmentRoot);
+
+            Files.createDirectories(submissionPath);
+
+            FileTreeManager.backup(submission, submissionPath);
+            return true;
+        } catch (IOException e) {
             LOG.log(Level.FINER, null, e);
+            e.printStackTrace();
+            return false;
         }
     }
 
@@ -264,10 +324,10 @@ public class InputBasedGraderHandler {
         String assignmentName = title.substring(parenStart + 1, parenEnd);
 
         IConfigReader config = new ConfigReader("./config/config.properties");
-        String username = config.getString("database.username");
-        String password = config.getString("database.password");
-        String url = config.getString("database.url");
-        if (config.getBoolean("database.ssl")) {
+        String username = config.getString("database.username").orElseThrow(IllegalArgumentException::new);
+        String password = config.getString("database.password").orElseThrow(IllegalArgumentException::new);
+        String url = config.getString("database.url").orElseThrow(IllegalArgumentException::new);
+        if (config.getBoolean("database.ssl", false).get()) {
             url += "?verifyServerCertificate=true&useSSL=true&requireSSL=true";
         }
         try (DatabaseReader dr = new DatabaseReader(username, password, "jdbc:" + url)) {

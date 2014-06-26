@@ -7,8 +7,9 @@ import server.htmlBuilder.form.input.Button;
  *
  */
 public class SubmitButton extends Button implements ISubmitButton {
-	public SubmitButton() {
-		super();
-		setType("submit");
-	}
+
+    public SubmitButton() {
+        super();
+        setType("submit");
+    }
 }

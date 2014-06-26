@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -15,15 +16,19 @@ import server.com.webHandler.sql.DatabaseReader;
 import server.com.webHandler.sql.IDatabaseReader;
 import server.htmlBuilder.HTMLFile;
 import server.htmlBuilder.attributes.LinkTarget;
+import server.htmlBuilder.attributes.TextStyle;
 import server.htmlBuilder.body.Body;
 import server.htmlBuilder.body.Division;
 import server.htmlBuilder.body.Header;
+import server.htmlBuilder.body.HorizontalRule;
 import server.htmlBuilder.body.Hyperlink;
 import server.htmlBuilder.body.IBody;
 import server.htmlBuilder.body.IDivision;
 import server.htmlBuilder.body.IHyperlink;
+import server.htmlBuilder.body.IParagraph;
 import server.htmlBuilder.body.ISpan;
 import server.htmlBuilder.body.LineBreak;
+import server.htmlBuilder.body.Paragraph;
 import server.htmlBuilder.body.Span;
 import server.htmlBuilder.body.Text;
 import server.htmlBuilder.doctype.HTML5Doctype;
@@ -41,7 +46,9 @@ import server.htmlBuilder.form.input.FileField;
 import server.htmlBuilder.form.input.IFileField;
 import server.htmlBuilder.form.input.ISubmitButton;
 import server.htmlBuilder.form.input.SubmitButton;
+import server.htmlBuilder.global.INoScripts;
 import server.htmlBuilder.global.IScript;
+import server.htmlBuilder.global.NoScripts;
 import server.htmlBuilder.global.Script;
 import server.htmlBuilder.head.Head;
 import server.htmlBuilder.head.ILink;
@@ -57,8 +64,9 @@ import server.utils.IConfigReader;
 
 public class UploadPage extends HTMLFile implements IUploadPage {
 
-    private static final String authKey;
     private static final Logger LOG = Logger.getLogger(UploadPage.class.getName());
+
+    private static final String authKey;
 
     static {
         StringBuilder auth = new StringBuilder(50);
@@ -66,19 +74,20 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         while (auth.length() < 50) {
             auth.append((char) rand.nextInt());
         }
-
         try {
             IConfigReader config = new ConfigReader("config/auth.properties");
-            auth.setLength(0);
-            auth.append(config.getString("database.view.authKey"));
+            config.getString("database.view.authKey").ifPresent((key) -> {
+                auth.setLength(0);
+                auth.append(key);
+            });
         } catch (IOException ex) {
             Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, ex);
         }
         authKey = auth.toString();
     }
-    private String user = "";
     private String auth = "";
     private boolean isAdmin;
+    private String user = "";
 
     @Override
     public void setArgs(String args) {
@@ -105,31 +114,6 @@ public class UploadPage extends HTMLFile implements IUploadPage {
     }
 
     @Override
-    public void setUser(String user) {
-        this.user = user.replace("+", " ");
-        IDatabaseReader dr = new DatabaseReader();
-        try {
-            IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
-            dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
-
-            try (ResultSet admins = dr.getAdminForUser(user)) {
-                if (admins.isBeforeFirst()) {
-                    isAdmin = true;
-                }
-            }
-        } catch (SQLException | IOException e) {
-            LOG.log(Level.FINER, null, e);
-        } finally {
-            try {
-                dr.disconnect();
-            } catch (SQLException ex) {
-                Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        LOG.log(Level.INFO, "Authenticated as user {0}", user);
-    }
-
-    @Override
     public void setAuth(String auth) {
         this.auth = auth.replace("+", " ");
     }
@@ -153,25 +137,31 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         return super.getHTML();
     }
 
-    private void buildParts() throws FileNotFoundException, IOException {
-        buildHead();
-        buildBody();
-    }
+    @Override
+    public void setUser(String user) {
+        this.user = user.replace("+", " ");
+        IDatabaseReader dr = new DatabaseReader();
+        try {
+            IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
+            dr.connect(config.getString("database.username").orElseThrow(IllegalArgumentException::new),
+                    config.getString("database.password").orElseThrow(IllegalArgumentException::new),
+                    "jdbc:" + config.getString("database.url").orElseThrow(IllegalArgumentException::new));
 
-    private void buildHead() {
-        ITitle title = new Title("Upload to Grading Database");
-
-        IMetaAttr charset = new MetaAttr();
-        charset.addAttribute("charset", "UTF-8");
-
-        ILink faviconLink = new Link();
-        faviconLink.setRelation("shortcut icon");
-        faviconLink.addLinkAttribtue("href", "favicon.ico");
-        faviconLink.addLinkAttribtue("type", "image/vnd.microsoft.icon");
-
-        setHead(new Head(title, charset, faviconLink));
-
-        addCSSFile("grader.css");
+            try (ResultSet admins = dr.getAdminForUser(user)) {
+                if (admins.isBeforeFirst()) {
+                    isAdmin = true;
+                }
+            }
+        } catch (SQLException | IOException e) {
+            LOG.log(Level.FINER, null, e);
+        } finally {
+            try {
+                dr.disconnect();
+            } catch (SQLException ex) {
+                Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        LOG.log(Level.INFO, "Authenticated as user {0}", user);
     }
 
     private void buildBody() throws FileNotFoundException, IOException {
@@ -185,7 +175,9 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         IDatabaseReader dr = new DatabaseReader();
         try {
             IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
-            dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
+            dr.connect(config.getString("database.username").orElseThrow(IllegalArgumentException::new),
+                    config.getString("database.password").orElseThrow(IllegalArgumentException::new),
+                    "jdbc:" + config.getString("database.url").orElseThrow(IllegalArgumentException::new));
             ResultSet admins = dr.getAdminForUser(user);
             if (admins.first()) {
                 userInfo.addContent(new Text(user + "&ndash;admin"));
@@ -229,12 +221,103 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         content.setClass("content");
         content.addContent(new StudentDataNavBar());
         content.addContent(buildSubmitForm());
+        
+        INoScripts noScriptNoteHolder = new NoScripts();
+        IParagraph noScriptNote = new Paragraph();
+        noScriptNote.setClassName("center");
+        noScriptNote.addContent(new Text("The upload form relies on JavaScript to display the correct submission options. Either enable JavaScript for this page or use the Eclipe plugin to submit.", TextStyle.ITALIC));
+        noScriptNoteHolder.addElement(content);
         bodyWrapper.addContent(content);
         body.addElement(bodyWrapper);
 
         body.addElement(getUpdateScript());
+        
+        body.setOnload(() -> "document.upload_form.upload.disabled = false;");
 
         setBody(body);
+    }
+
+    private ISelect buildDropDown(ResultSet results, String id, String key, String defaultVal, boolean required, String placeholder) throws SQLException {
+        ISelect select = new Select();
+        select.setRequired(required);
+        select.setName(id);
+        select.setID(id);
+
+        if (required) {
+            IOption option = new Option();
+            option.setText(placeholder);
+            option.setValue("");
+            select.addOption(option);
+        }
+
+        boolean selected = false;
+
+        while (results.next()) {
+            String result = results.getString(key);
+            IOption option = new Option();
+            option.setText(result);
+            option.setValue(result);
+            if (!selected && result.equals(defaultVal)) {
+                //System.out.println("Default selection: " + result);
+                option.setSelected(true);
+                selected = true;
+            }
+            select.addOption(option);
+        }
+        results.close();
+        //System.out.println("**" + id);
+        return select;
+    }
+
+    private ISelect buildDropDown(String[] options, String id, String defaultVal, boolean required, String placeholder) throws SQLException {
+        ISelect select = new Select();
+        select.setRequired(required);
+        select.setName(id);
+        select.setID(id);
+
+        if (required) {
+            IOption option = new Option();
+            option.setText(placeholder);
+            option.setValue("");
+            select.addOption(option);
+        }
+
+        boolean selected = false;
+
+        for (String optionValue : options) {
+            IOption option = new Option();
+            option.setText(optionValue);
+            option.setValue(optionValue);
+            if (!selected && optionValue.equals(defaultVal)) {
+                //System.out.println("Default selection: " + optionValue);
+                option.setSelected(true);
+                selected = true;
+            }
+            select.addOption(option);
+        }
+        //System.out.println("**" + id);
+        return select;
+    }
+
+    private void buildHead() {
+        ITitle title = new Title("Upload to Grading Database");
+
+        IMetaAttr charset = new MetaAttr();
+        charset.addAttribute("charset", "UTF-8");
+
+        ILink faviconLink = new Link();
+        faviconLink.setRelation("shortcut icon");
+        faviconLink.addLinkAttribtue("href", "favicon.ico");
+        faviconLink.addLinkAttribtue("type", "image/vnd.microsoft.icon");
+
+        setHead(new Head(title, charset, faviconLink));
+
+        addCSSFile("grader.css");
+    }
+
+    private void buildParts() throws FileNotFoundException, IOException {
+        buildHead();
+        buildBody();
     }
 
     private IForm buildSubmitForm() throws FileNotFoundException, IOException {
@@ -243,11 +326,13 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         ResultSet results = null;
         try {
             IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
-            dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
+            dr.connect(config.getString("database.username").orElseThrow(IllegalArgumentException::new),
+                    config.getString("database.password").orElseThrow(IllegalArgumentException::new),
+                    "jdbc:" + config.getString("database.url").orElseThrow(IllegalArgumentException::new));
 
             form.setMethod("post");
             form.setEncoding("multipart/form-data");
-            form.setAction("upload_handler.php");
+            form.setAction("grading.php");
             form.setID("upload_form");
             form.setName("upload_form");
             form.setClassName("center");
@@ -334,6 +419,7 @@ public class UploadPage extends HTMLFile implements IUploadPage {
             upload.setValue("Upload");
             upload.setForm("upload_form");
             upload.setName("upload");
+            upload.setDisabled(true);
 
             form.addElement(fileLabel);
             form.addElement(file);
@@ -359,12 +445,74 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         return form;
     }
 
+    private String getAssignmentTable() {
+        StringBuilder assignments = new StringBuilder(500);
+        assignments.append("[");
+        ResultSet results = null;
+        try (IDatabaseReader dr = new DatabaseReader()) {
+            IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
+            dr.connect(config.getString("database.username").orElseThrow(IllegalArgumentException::new),
+                    config.getString("database.password").orElseThrow(IllegalArgumentException::new),
+                    "jdbc:" + config.getString("database.url").orElseThrow(IllegalArgumentException::new));
+            ArrayList<String> typesList = new ArrayList<>(3);
+            results = dr.getTypes();
+            while (results.next()) {
+                typesList.add(results.getString("name"));
+            }
+            results.close();
+            String[] types = typesList.toArray(new String[typesList.size()]);
+            String[] coursesAndSections = getCourseAndSectionList();
+
+            for (String courseAndSection : coursesAndSections) {
+                String[] parts = courseAndSection.split("-", 2);
+                String course = parts[0];
+                String section = parts[1];
+                assignments.append("[");
+                for (String type : types) {
+                    assignments.append("[");
+                    results = dr.getCurrentAssignments(type, course, section);
+                    String firstCapType = type.toLowerCase();
+                    firstCapType = firstCapType.substring(0, 1).toUpperCase().concat(firstCapType.substring(1));
+                    while (results.next()) {
+                        assignments.append("\"").append(results.getString("name")).append(" (").append(firstCapType).append(" ").append(results.getInt("number")).append(")\", ");
+                    }
+                    if (assignments.charAt(assignments.length() - 1) != '[') {
+                        assignments.delete(assignments.length() - 2, Integer.MAX_VALUE);
+                    }
+                    assignments.append("], ");
+                }
+                if (assignments.charAt(assignments.length() - 1) != '[') {
+                    assignments.delete(assignments.length() - 2, Integer.MAX_VALUE);
+                }
+                assignments.append("], ");
+            }
+            if (assignments.charAt(assignments.length() - 1) != '[') {
+                assignments.delete(assignments.length() - 2, Integer.MAX_VALUE);
+            }
+        } catch (Exception e) {
+            Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, e);
+            return "[]";
+        } finally {
+            if (results != null) {
+                try {
+                    results.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+        assignments.append("]");
+        return assignments.toString();
+    }
+
     private String[] getCourseAndSectionList() throws FileNotFoundException, IOException {
         IDatabaseReader dr = new DatabaseReader();
         ResultSet results = null;
         IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
         try {
-            dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
+            dr.connect(config.getString("database.username").orElseThrow(IllegalArgumentException::new),
+                    config.getString("database.password").orElseThrow(IllegalArgumentException::new),
+                    "jdbc:" + config.getString("database.url").orElseThrow(IllegalArgumentException::new));
             results = dr.getCurrentCourses();
             ArrayList<String> courses = new ArrayList<>(5);
             while (results.next()) {
@@ -433,125 +581,5 @@ public class UploadPage extends HTMLFile implements IUploadPage {
         script.setScript(scriptGen);
 
         return script;
-    }
-
-    private String getAssignmentTable() {
-        StringBuilder assignments = new StringBuilder(500);
-        assignments.append("[");
-        ResultSet results = null;
-        try (IDatabaseReader dr = new DatabaseReader()) {
-            IConfigReader config = new ConfigReader(Paths.get("config", "config.properties").toString());
-            dr.connect(config.getString("database.username"), config.getString("database.password"), "jdbc:" + config.getString("database.url"));
-            ArrayList<String> typesList = new ArrayList<>(3);
-            results = dr.getTypes();
-            while (results.next()) {
-                typesList.add(results.getString("name"));
-            }
-            results.close();
-            String[] types = typesList.toArray(new String[typesList.size()]);
-            String[] coursesAndSections = getCourseAndSectionList();
-
-            for (String courseAndSection : coursesAndSections) {
-                String[] parts = courseAndSection.split("-", 2);
-                String course = parts[0];
-                String section = parts[1];
-                assignments.append("[");
-                for (String type : types) {
-                    assignments.append("[");
-                    results = dr.getCurrentAssignments(type, course, section);
-                    String firstCapType = type.toLowerCase();
-                    firstCapType = firstCapType.substring(0, 1).toUpperCase().concat(firstCapType.substring(1));
-                    while (results.next()) {
-                        assignments.append("\"").append(results.getString("name")).append(" (").append(firstCapType).append(" ").append(results.getInt("number")).append(")\", ");
-                    }
-                    if (assignments.charAt(assignments.length() - 1) != '[') {
-                        assignments.delete(assignments.length() - 2, Integer.MAX_VALUE);
-                    }
-                    assignments.append("], ");
-                }
-                if (assignments.charAt(assignments.length() - 1) != '[') {
-                    assignments.delete(assignments.length() - 2, Integer.MAX_VALUE);
-                }
-                assignments.append("], ");
-            }
-            if (assignments.charAt(assignments.length() - 1) != '[') {
-                assignments.delete(assignments.length() - 2, Integer.MAX_VALUE);
-            }
-        } catch (Exception e) {
-            Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, e);
-            return "[]";
-        } finally {
-            if (results != null) {
-                try {
-                    results.close();
-                } catch (SQLException ex) {
-                    Logger.getLogger(UploadPage.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        }
-        assignments.append("]");
-        return assignments.toString();
-    }
-
-    private ISelect buildDropDown(ResultSet results, String id, String key, String defaultVal, boolean required, String placeholder) throws SQLException {
-        ISelect select = new Select();
-        select.setRequired(required);
-        select.setName(id);
-        select.setID(id);
-
-        if (required) {
-            IOption option = new Option();
-            option.setText(placeholder);
-            option.setValue("");
-            select.addOption(option);
-        }
-
-        boolean selected = false;
-
-        while (results.next()) {
-            String result = results.getString(key);
-            IOption option = new Option();
-            option.setText(result);
-            option.setValue(result);
-            if (!selected && result.equals(defaultVal)) {
-                //System.out.println("Default selection: " + result);
-                option.setSelected(true);
-                selected = true;
-            }
-            select.addOption(option);
-        }
-        results.close();
-        //System.out.println("**" + id);
-        return select;
-    }
-
-    private ISelect buildDropDown(String[] options, String id, String defaultVal, boolean required, String placeholder) throws SQLException {
-        ISelect select = new Select();
-        select.setRequired(required);
-        select.setName(id);
-        select.setID(id);
-
-        if (required) {
-            IOption option = new Option();
-            option.setText(placeholder);
-            option.setValue("");
-            select.addOption(option);
-        }
-
-        boolean selected = false;
-
-        for (String optionValue : options) {
-            IOption option = new Option();
-            option.setText(optionValue);
-            option.setValue(optionValue);
-            if (!selected && optionValue.equals(defaultVal)) {
-                //System.out.println("Default selection: " + optionValue);
-                option.setSelected(true);
-                selected = true;
-            }
-            select.addOption(option);
-        }
-        //System.out.println("**" + id);
-        return select;
     }
 }

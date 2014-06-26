@@ -9,5 +9,6 @@ import java.util.concurrent.ExecutionException;
  * @author Andrew Vitkus
  */
 public interface IGradeWriter {
-    public void write(IGradingData grading) throws FileNotFoundException, IOException, InterruptedException, ExecutionException ;
+
+    public void write(IGradingData grading) throws FileNotFoundException, IOException, InterruptedException, ExecutionException;
 }

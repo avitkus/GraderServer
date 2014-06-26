@@ -7,6 +7,8 @@ import server.cssBuilder.ICSSFile;
  *
  */
 public interface IStyle extends IHeadElement {
-	public void setCSS(ICSSFile file);
-	public ICSSFile getCSS();
+
+    public void setCSS(ICSSFile file);
+
+    public ICSSFile getCSS();
 }

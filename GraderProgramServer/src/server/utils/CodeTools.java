@@ -23,8 +23,8 @@ public class CodeTools {
 
             int prev = sr.read();
             int cur;
-            for(cur = sr.read(); cur != -1; cur = sr.read()) {
-                if(inBlockComment) {
+            for (cur = sr.read(); cur != -1; cur = sr.read()) {
+                if (inBlockComment) {
                     if (prev == '*' && cur == '/') {
                         inBlockComment = false;
                         out = false;
@@ -39,8 +39,8 @@ public class CodeTools {
                         inBlockComment = true;
                     } else if (prev == '/' && cur == '/') {
                         inLineComment = true;
-                    } else if (out){
-                        newCode.append((char)prev);
+                    } else if (out) {
+                        newCode.append((char) prev);
                     } else {
                         out = true;
                     }
@@ -48,7 +48,7 @@ public class CodeTools {
                 prev = cur;
             }
             if (prev != -1 && out && !inLineComment) {
-                newCode.append((char)prev);
+                newCode.append((char) prev);
             }
         } catch (IOException e) {
             e.printStackTrace();

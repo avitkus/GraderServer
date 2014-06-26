@@ -9,6 +9,7 @@ import server.htmlBuilder.IHTMLFile;
 public interface IResponseWriter {
 
     public String getResponseText();
+
     public IHTMLFile getResponse();
 
     public void setAssignmentName(String name);

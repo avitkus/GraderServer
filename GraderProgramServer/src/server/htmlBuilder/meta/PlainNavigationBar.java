@@ -16,6 +16,7 @@ import server.htmlBuilder.util.IAttributeManager;
  * @author Andrew Vitkus
  */
 public class PlainNavigationBar implements INavigationBar {
+
     private final INavigation nav;
     private final IAttributeManager attrs;
     private String className;
@@ -28,19 +29,19 @@ public class PlainNavigationBar implements INavigationBar {
         className = "";
         id = "";
     }
-    
+
     @Override
     public void addLink(String display, String dest) {
         addLink(display, dest, LinkTarget.PARENT);
     }
-    
+
     @Override
     public void addLink(String display, String dest, LinkTarget target) {
         IHyperlink link = new Hyperlink();
         link.addContent(new Text(display));
         link.setURL(dest);
         link.setTarget(target);
-        
+
         addLink(link);
     }
 
@@ -52,7 +53,7 @@ public class PlainNavigationBar implements INavigationBar {
     @Override
     public IHyperlink[] getLinks() {
         ArrayList<IHyperlink> links = new ArrayList<>(5);
-        for(IBodyElement element : nav.getContents()) {
+        for (IBodyElement element : nav.getContents()) {
             if (element instanceof IHyperlink) {
                 links.add((IHyperlink) element);
             }

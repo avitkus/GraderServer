@@ -9,6 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import server.com.graderHandler.InputBasedGraderHandler;
 import server.com.graderHandler.util.GradingFailureException;
+import server.com.webHandler.pages.helpers.GradePageManager;
 import server.htmlBuilder.HTMLFile;
 import server.htmlBuilder.body.Body;
 import server.htmlBuilder.body.Header;
@@ -28,31 +29,25 @@ import server.htmlBuilder.table.Table;
 import server.htmlBuilder.table.TableData;
 import server.htmlBuilder.table.TableRow;
 
-/**
- * 
- * @author Andrew Vitkus
- */
 public class GraderPage extends HTMLFile implements IGraderPage {
-    private Path fileLoc;
-    private String onyen;
-    private String course;
-    private String auth;
-    private String uid;
+
+    private static final Logger LOG = Logger.getLogger(GraderPage.class.getName());
+
     private String assignment;
+    private String auth;
+    private String course;
+    private Path fileLoc;
+    private String firstName;
+    private String uuid;
+    private String ip;
+    private String lastName;
+    private String onyen;
+    private String pid;
+    private String uid;
 
     @Override
-    public void setToGradeFile(Path fileLoc) {
-        this.fileLoc = fileLoc;
-    }
-
-    @Override
-    public void setOnyen(String onyen) {
-        this.onyen = onyen;
-    }
-
-    @Override
-    public void setCourse(String course) {
-        this.course = course;
+    public void setAssignment(String assignment) {
+        this.assignment = assignment;
     }
 
     @Override
@@ -61,19 +56,20 @@ public class GraderPage extends HTMLFile implements IGraderPage {
     }
 
     @Override
-    public void setAssignment(String assignment) {
-        this.assignment = assignment;
+    public void setCourse(String course) {
+        this.course = course;
     }
-    
+
     @Override
-    public void setUID(String uid) {
-        this.uid = uid;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
     }
 
     @Override
     public String getHTML() {
         setDoctype(new HTML5Doctype());
         buildParts();
+        setPageUUID(GradePageManager.add(new NotFoundPage(), ip));
         InputBasedGraderHandler grader = new InputBasedGraderHandler();
         grader.setAssignment(assignment);
         grader.setCourse(course.split("-")[0]);
@@ -81,26 +77,77 @@ public class GraderPage extends HTMLFile implements IGraderPage {
         grader.setOyen(onyen);
         grader.setSubmission(fileLoc);
         grader.setUID(uid);
+        grader.setName(firstName, lastName);
+        grader.setPID(pid);
+        grader.setPageUUID(uuid);
         
-        try {
-            //return super.getHTML();
-            System.out.println("grade");
-            return grader.process().getHTML();
-        } catch (GradingFailureException ex) {
-            ex.printStackTrace();
-            Logger.getLogger(GraderPage.class.getName()).log(Level.SEVERE, null, ex);
-            return super.getHTML();
-        }
+        IGradingInProgressPage gpp = new GradingInProgressPage();
+        gpp.setPageUUID(uuid);
+        GradePageManager.update(uuid, gpp);
+
+        //System.out.println("grade");
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    grader.process();
+                } catch (GradingFailureException ex) {
+                    Logger.getLogger(GraderPage.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }.start();
+        return GradePageManager.get(uuid).get().getHTML();
     }
-    
-    private void buildParts() {
-        buildBody();
-        buildHead();
+
+    @Override
+    public String getPageUUID() {
+        return uuid;
     }
-    
+
+    @Override
+    public void setPageUUID(String uuid) {
+        this.uuid = uuid;
+    }
+
+    @Override
+    public void setIP(String ip) {
+        this.ip = ip;
+    }
+
+    @Override
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    @Override
+    public void setOnyen(String onyen) {
+        this.onyen = onyen;
+    }
+
+    @Override
+    public void setPID(String pid) {
+        this.pid = pid;
+    }
+
+    @Override
+    public void setToGradeFile(Path fileLoc) {
+        this.fileLoc = fileLoc;
+    }
+
+    @Override
+    public void setUID(String uid) {
+        this.uid = uid;
+    }
+
+    @Override
+    public void setName(String first, String last) {
+        firstName = first;
+        lastName = last;
+    }
+
     private void buildBody() {
         IBody body = new Body();
-        
+
         body.addElement(new Header(new Text("File recieved"), 2));
         StringBuilder fileContentsBin = new StringBuilder(100);
         StringBuilder fileContentsChar = new StringBuilder(100);
@@ -112,8 +159,8 @@ public class GraderPage extends HTMLFile implements IGraderPage {
             Logger.getLogger(GraderPage.class.getName()).log(Level.SEVERE, null, ex);
         }
         try (BufferedReader br = new BufferedReader(new FileReader(fileLoc.toFile()))) {
-            int i = -1;
-            while((i = br.read()) != -1) {
+            int i;
+            while ((i = br.read()) != -1) {
                 fileContentsBin.append(i);
             }
         } catch (FileNotFoundException ex) {
@@ -132,7 +179,7 @@ public class GraderPage extends HTMLFile implements IGraderPage {
         body.addElement(fileTable);
         setBody(body);
     }
-    
+
     private void buildHead() {
         Title title = new Title("Grader temp page");
 
@@ -143,10 +190,14 @@ public class GraderPage extends HTMLFile implements IGraderPage {
         faviconLink.setRelation("shortcut icon");
         faviconLink.addLinkAttribtue("href", "favicon.ico");
         faviconLink.addLinkAttribtue("type", "image/vnd.microsoft.icon");
-        
+
         setHead(new Head(title, charset, faviconLink));
 
         addCSSFile("grader.css");
     }
-    
+
+    private void buildParts() {
+        buildBody();
+        buildHead();
+    }
 }

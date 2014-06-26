@@ -50,9 +50,9 @@ public class EventManager implements IEventManager {
         }
 
         StringBuilder html = new StringBuilder(20);
-        
+
         events.forEach((trigger, script) -> html.append(" ").append(trigger).append("=\"").append(script.getText()).append("\""));
-        
+
         return html.toString();
     }
 

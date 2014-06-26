@@ -66,7 +66,7 @@ public class FieldSet implements IFieldSet {
     public String getTagType() {
         return "fieldset";
     }
-    
+
     @Override
     public void setDisabled(boolean disable) {
         if (disable) {
@@ -100,7 +100,7 @@ public class FieldSet implements IFieldSet {
     public String getName() {
         return attrs.getAttribute("name");
     }
-    
+
     @Override
     public void addAttribute(String name, String value) {
         attrs.addAttribute(name, value);

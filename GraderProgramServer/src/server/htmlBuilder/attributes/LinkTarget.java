@@ -5,5 +5,11 @@ package server.htmlBuilder.attributes;
  *
  */
 public enum LinkTarget {
-	BLANK, SELF, PARENT, TOP
+
+    BLANK, SELF, PARENT, TOP;
+
+    @Override
+    public String toString() {
+        return name().toLowerCase();
+    }
 }

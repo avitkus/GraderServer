@@ -46,7 +46,7 @@ public class AverageTableBuilder implements ITableBuilder {
             headerRow.addDataPart(new TableHeader(new Text("Possible")));
             headerRow.addDataPart(new TableHeader(new Text("Extra Credit")));
             headerRow.addDataPart(new TableHeader(new Text("Autograded")));
-            
+
             table.addRow(headerRow);
 
             LinkedHashMap<String, GradingData> gradingMap = new LinkedHashMap<>(10);
@@ -54,13 +54,13 @@ public class AverageTableBuilder implements ITableBuilder {
             while (results.next()) {
                 int resultID = results.getInt("id");
                 try (ResultSet grading = dr.getGradingForResult(resultID)) {
-                    while(grading.next()) {
+                    while (grading.next()) {
                         String gradingName = grading.getString("name");
                         int gradingID = grading.getInt("id");
                         int pointsPossible = grading.getInt("possible");
                         double autoGradedPercentage = grading.getDouble("auto_graded_percent");
                         boolean extraCredit = grading.getBoolean("extra_credit");
-                        
+
                         GradingData data;
                         if (gradingMap.containsKey(gradingName)) {
                             data = gradingMap.get(gradingName);
@@ -68,15 +68,15 @@ public class AverageTableBuilder implements ITableBuilder {
                             data = new GradingData(pointsPossible, autoGradedPercentage, extraCredit);
                             gradingMap.put(gradingName, data);
                         }
-                        
+
                         data.addPointTotal(grading.getInt("points"));
                         try (ResultSet tests = dr.getTestsForGrading(gradingID)) {
-                            while(tests.next()) {
+                            while (tests.next()) {
                                 String name = tests.getString("name");
                                 double percent = tests.getDouble("percent");
                                 boolean autoGraded = tests.getBoolean("auto_graded");
                                 data.addTestData(name, percent, autoGraded);
-                            }  
+                            }
                         }
                     }
                 }
@@ -91,10 +91,10 @@ public class AverageTableBuilder implements ITableBuilder {
                 row.addDataPart(new TableData(new Text(Integer.toString(gradingData.getPossible()))));
                 row.addDataPart(new TableData(new Text(gradingData.isExtraCredit() ? "Yes" : "No")));
                 row.addDataPart(new TableData(new Text(roundToString(gradingData.getPercentAutograded(), 1) + "%")));
-                
+
                 table.addRow(row);
                 row = new TableRow();
-                
+
                 for (Entry<String, GradingData.TestData> testEntry : gradingData.getData()) {
                     GradingData.TestData test = testEntry.getValue();
                     row.addDataPart(new TableData(new Text(testEntry.getKey())));
@@ -131,7 +131,7 @@ public class AverageTableBuilder implements ITableBuilder {
             this.autoGraded = autoGraded;
             this.extraCredit = extraCredit;
         }
-        
+
         void addPointTotal(int points) {
             this.points += points;
             count++;
@@ -150,19 +150,19 @@ public class AverageTableBuilder implements ITableBuilder {
             Set<Entry<String, TestData>> testSet = testMap.entrySet();
             return testMap.entrySet().toArray(new Entry[testSet.size()]);
         }
-        
+
         double getAveragePoints() {
-            return ((double)points)/count;
+            return ((double) points) / count;
         }
-        
+
         int getPossible() {
             return possible;
         }
-        
+
         double getPercentAutograded() {
             return autoGraded;
         }
-        
+
         boolean isExtraCredit() {
             return extraCredit;
         }
@@ -193,20 +193,20 @@ public class AverageTableBuilder implements ITableBuilder {
             boolean isAutoGraded() {
                 return autoGraded;
             }
-            
+
             boolean isNegative() {
                 return isNegative;
             }
         }
     }
-    
+
     private String roundToString(double d, int precision) {
         d = round(d, precision);
         return Double.toString(d);
     }
-    
+
     private double round(double d, int precision) {
-        int mult = (int)Math.pow(10, precision);
+        int mult = (int) Math.pow(10, precision);
         d = d * mult;
         d = Math.round(d);
         d = d / mult;

@@ -9,29 +9,30 @@ import server.htmlBuilder.util.Offsetter;
  *
  */
 public class CSSFile implements ICSSFile {
-	private ArrayList<IRule> rules;
-	
-	public CSSFile() {
-		rules = new ArrayList<>();
-	}
-	
-	@Override
-	public void addRule(IRule rule) {
-		rules.add(rule);
-	}
 
-	@Override
-	public IRule[] getRules() {
-		return rules.toArray(new IRule[rules.size()]);
-	}
+    private ArrayList<IRule> rules;
 
-	@Override
-	public String getCSS(int depth) {
-		StringBuilder css = new StringBuilder();
-		for(IRule rule : rules) {
-			css.append(Offsetter.indent(depth)).append(rule.getCSS(depth)).append("\r\n");
-		}
-		return css.toString();
-	}
+    public CSSFile() {
+        rules = new ArrayList<>();
+    }
+
+    @Override
+    public void addRule(IRule rule) {
+        rules.add(rule);
+    }
+
+    @Override
+    public IRule[] getRules() {
+        return rules.toArray(new IRule[rules.size()]);
+    }
+
+    @Override
+    public String getCSS(int depth) {
+        StringBuilder css = new StringBuilder();
+        for (IRule rule : rules) {
+            css.append(Offsetter.indent(depth)).append(rule.getCSS(depth)).append("\r\n");
+        }
+        return css.toString();
+    }
 
 }

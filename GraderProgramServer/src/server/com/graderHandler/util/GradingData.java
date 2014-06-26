@@ -5,9 +5,10 @@ package server.com.graderHandler.util;
  * @author Andrew Vitkus
  */
 public class GradingData implements IGradingData {
+
     private final String onyen, first, last;
     private final double score, possible;
-    
+
     public GradingData(String onyen, String first, String last, double score, double possible) {
         this.onyen = onyen;
         this.first = first;
@@ -15,7 +16,7 @@ public class GradingData implements IGradingData {
         this.score = score;
         this.possible = possible;
     }
-    
+
     @Override
     public String getOnyen() {
         return onyen;
@@ -40,5 +41,5 @@ public class GradingData implements IGradingData {
     public double getPossible() {
         return possible;
     }
-    
+
 }

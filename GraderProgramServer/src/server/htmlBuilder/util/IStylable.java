@@ -5,6 +5,8 @@ package server.htmlBuilder.util;
  *
  */
 public interface IStylable {
-	public void addStyle(String name, String value);
-	public String[][] getStyles();
+
+    public void addStyle(String name, String value);
+
+    public String[][] getStyles();
 }

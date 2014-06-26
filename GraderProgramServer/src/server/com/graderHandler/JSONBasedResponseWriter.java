@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import server.com.graderHandler.pages.FailPage;
 import server.com.graderHandler.pages.ISuccessPage;
+import server.com.graderHandler.pages.StylizedSuccessPage;
 import server.com.graderHandler.pages.SuccessPage;
 import server.com.graderHandler.util.IJSONReader;
 import server.com.graderHandler.util.INoteData;
@@ -15,22 +16,29 @@ import server.com.graderHandler.util.JSONReader;
  *
  */
 public class JSONBasedResponseWriter extends ResponseWriter {
-
-    public JSONBasedResponseWriter(String jsonFileLoc) throws FileNotFoundException, IOException {
+    public JSONBasedResponseWriter(String jsonFileLoc, boolean stylized) throws FileNotFoundException, IOException {
         this(new File(jsonFileLoc));
     }
-
+    
+    public JSONBasedResponseWriter(String jsonFileLoc) throws FileNotFoundException, IOException {
+        this(new File(jsonFileLoc), false);
+    }
+    
     public JSONBasedResponseWriter(File json) throws FileNotFoundException, IOException {
+        this(json, false);
+    }
+
+    public JSONBasedResponseWriter(File json, boolean stylized) throws FileNotFoundException, IOException {
         if (json.exists()) {
             IJSONReader reader = new JSONReader(json);
-            response = new SuccessPage();
+            response = stylized ? new StylizedSuccessPage() : new SuccessPage();
 
             String[][] grading = reader.getGrading();
             INoteData notes = reader.getNotes();
             String[] comments = reader.getComments();
-            ((ISuccessPage)response).setGrading(grading);
-            ((ISuccessPage)response).setNotes(notes);
-            ((ISuccessPage)response).setComments(comments);
+            ((ISuccessPage) response).setGrading(grading);
+            ((ISuccessPage) response).setNotes(notes);
+            ((ISuccessPage) response).setComments(comments);
             if (grading != null && notes != null && comments != null) {
                 return;
             }

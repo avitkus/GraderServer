@@ -8,14 +8,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Properties;
 
-
 public class DatabaseReader implements IDatabaseReader {
 
     private Connection connection;
-    
+
     public DatabaseReader() {
     }
-    
+
     public DatabaseReader(String username, String password, String server) throws SQLException {
         connect(username, password, server);
     }
@@ -251,7 +250,7 @@ public class DatabaseReader implements IDatabaseReader {
             }
         }
     }
-    
+
     @Override
     public void close() throws SQLException {
         disconnect();

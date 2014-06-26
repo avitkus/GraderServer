@@ -5,8 +5,10 @@ package server.cssBuilder;
  *
  */
 public interface IPropertyManager {
-	public void addProperty(String name, String value);
-	public String[][] getProperties();
-	
-	public String getCSS(int indent);
+
+    public void addProperty(String name, String value);
+
+    public String[][] getProperties();
+
+    public String getCSS(int indent);
 }

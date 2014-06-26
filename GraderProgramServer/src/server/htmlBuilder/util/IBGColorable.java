@@ -5,6 +5,8 @@ package server.htmlBuilder.util;
  *
  */
 public interface IBGColorable extends IStylable {
-	public void setBGColor(String color);
-	public String getBGColor();
+
+    public void setBGColor(String color);
+
+    public String getBGColor();
 }

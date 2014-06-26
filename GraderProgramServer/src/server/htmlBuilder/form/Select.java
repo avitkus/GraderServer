@@ -215,16 +215,6 @@ public class Select implements ISelect {
     }
 
     @Override
-    public void setOnload(ScriptGenerator script) {
-        events.addEvent("onload", script);
-    }
-
-    @Override
-    public ScriptGenerator getOnload() {
-        return events.getEvent("onload");
-    }
-
-    @Override
     public void setOnchange(ScriptGenerator script) {
         events.addEvent("onchange", script);
     }

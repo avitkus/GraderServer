@@ -15,6 +15,7 @@ import server.htmlBuilder.util.AttributeManager;
 import server.htmlBuilder.util.IAttributeManager;
 
 public class ListNavigationBar implements INavigationBar {
+
     private final IUnorderedList linkList;
     private final IAttributeManager attrs;
     private String className;
@@ -26,23 +27,23 @@ public class ListNavigationBar implements INavigationBar {
         attrs = new AttributeManager();
         className = "";
         id = "";
-        for( IHyperlink link : elements) {
+        for (IHyperlink link : elements) {
             linkList.addListItem(new ListItem(link));
         }
     }
-    
+
     @Override
     public void addLink(String display, String dest) {
         addLink(display, dest, LinkTarget.PARENT);
     }
-    
+
     @Override
     public void addLink(String display, String dest, LinkTarget target) {
         IHyperlink link = new Hyperlink();
         link.addContent(new Text(display));
         link.setURL(dest);
         link.setTarget(target);
-        
+
         addLink(link);
     }
 
@@ -55,7 +56,7 @@ public class ListNavigationBar implements INavigationBar {
     public IHyperlink[] getLinks() {
         IListItem[] items = linkList.getListItems();
         ArrayList<IHyperlink> links = new ArrayList<>(items.length);
-        for(IListItem item : items) {
+        for (IListItem item : items) {
             links.add((IHyperlink) item.getContents()[0]);
         }
         return links.toArray(new IHyperlink[links.size()]);

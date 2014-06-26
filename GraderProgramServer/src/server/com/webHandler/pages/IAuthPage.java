@@ -7,7 +7,10 @@ import server.htmlBuilder.IHTMLFile;
  *
  */
 public interface IAuthPage extends IHTMLFile {
-	public void setArgs(String args);
-	public String checkAuth();
-	public void setFailed(boolean failed);
+
+    public void setArgs(String args);
+
+    public String checkAuth();
+
+    public void setFailed(boolean failed);
 }

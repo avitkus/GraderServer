@@ -7,6 +7,6 @@ import server.htmlBuilder.head.IHeadElement;
  *
  * @author Andrew Vitkus
  */
-public interface IGlobalElement extends IBodyElement, IHeadElement{
-    
+public interface IGlobalElement extends IBodyElement, IHeadElement {
+
 }

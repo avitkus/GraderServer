@@ -7,9 +7,14 @@ import java.util.List;
  *
  */
 public interface IJSONReader {
-	public String[][] getGrading();
-	public String[] getComments();
-	public INoteData getNotes();
-	public Boolean[] getExtraCredit();
-	public List<List<String>> getGradingTests();
+
+    public String[][] getGrading();
+
+    public String[] getComments();
+
+    public INoteData getNotes();
+
+    public Boolean[] getExtraCredit();
+
+    public List<List<String>> getGradingTests();
 }

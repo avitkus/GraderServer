@@ -10,6 +10,7 @@ import java.io.StringReader;
 import java.net.Socket;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -17,8 +18,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLSocket;
 import server.com.webHandler.pages.AuthPage;
+import server.com.webHandler.pages.GradingResultPage;
 import server.com.webHandler.pages.IAuthPage;
 import server.com.webHandler.pages.IGraderPage;
+import server.com.webHandler.pages.IGradingResultPage;
 import server.com.webHandler.pages.INotFoundPage;
 import server.com.webHandler.pages.IStudentDataLookupPage;
 import server.com.webHandler.pages.IStudentDataStatisticsPage;
@@ -47,10 +50,10 @@ public class WebHandler implements Runnable {
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
         return dateFormat.format(calendar.getTime());
     }
-    private final Socket clientSocket;
-    private final String requestLine;
     private final String args;
+    private final Socket clientSocket;
     private final String request;
+    private final String requestLine;
 
     public WebHandler(Socket socket, String requestLine, String args, String request) {
         clientSocket = socket;
@@ -82,6 +85,46 @@ public class WebHandler implements Runnable {
                 LOG.log(Level.FINER, null, e);
             }
         }
+    }
+    
+    private String buildHeader(int status, int length, String... headers) {
+        boolean hasType = false;
+        for(String header : headers) {
+            if (header.startsWith("Content-Type:")) {
+                hasType = true;
+                break;
+            }
+        }
+        if (!hasType) {
+            headers = Arrays.copyOf(headers, headers.length + 1);
+            headers[headers.length - 1] = "ContentType: " + "text/html";
+        }
+        StringBuilder head = new StringBuilder(50);
+        head.append("HTTP/1.1 ").append(status).append(" ");
+
+        switch (status) {
+            case 200:
+                head.append("OK\r\n");
+                break;
+            case 303:
+                head.append("See Other\r\n");
+                break;
+            case 404:
+                head.append("Not Found\r\n");
+                break;
+            default:
+                head.append("Internal Server Error\r\n");
+        }
+
+        head.append("Date: ").append(getServerTime()).append("\r\n");
+        head.append("Connection: close\r\n");
+        head.append("Content-Length: ").append(length).append("\r\n");
+        for(String header : headers) {
+            head.append(header).append("\r\n");
+        }
+        head.append("\r\n");
+
+        return head.toString();
     }
 
     private String getSite() throws FileNotFoundException, IOException {
@@ -158,19 +201,29 @@ public class WebHandler implements Runnable {
             try {
                 IRequest requestObj = parser.parse(request);
                 if (requestObj.isMultipart()) {
-                    System.out.println("submit");
+                    //System.out.println("submit");
                     //System.out.println("+++++\n" + requestObj.getRequest() + "\n+++++");
                     GraderPageSetup gps = new GraderPageSetup();
                     IGraderPage page = gps.buildGraderPage(requestObj);
+                    String uuid = page.getPageUUID();
                     String html = page.getHTML();
-                    return buildHeader(200, html.length()) + html;
+                    return buildHeader(303, html.length(), "Location: /grading.php?id="+uuid) + html;
                 } else {
-                    return "";
+                    return buildHeader(405, 0);
                 }
             } catch (MalformedRequestException ex) {
                 LOG.log(Level.SEVERE, null, ex);
                 return "";
             }
+        } else if (requestLine.contains(" /grading.html")) {
+            //System.out.println(request);
+            IGradingResultPage grp = new GradingResultPage();
+            if (args != null) {
+                grp.setArgs(args);
+            }
+
+            String html = grp.getHTML();
+            return buildHeader(200, html.length()) + html;
         }
         //System.out.println("not found");
         INotFoundPage nfp = new NotFoundPage();
@@ -184,34 +237,6 @@ public class WebHandler implements Runnable {
         nfp.setPage(page);
         String html = nfp.getHTML();
         return buildHeader(404, html.length()) + html;
-    }
-
-    private String buildHeader(int status, int length) {
-        return buildHeader(status, length, "text/html");
-    }
-
-    private String buildHeader(int status, int length, String type) {
-        StringBuilder head = new StringBuilder(50);
-        head.append("HTTP/1.1 ").append(status).append(" ");
-
-        switch (status) {
-            case 200:
-                head.append("OK\r\n");
-                break;
-            case 404:
-                head.append("Not Found\r\n");
-                break;
-            default:
-                head.append("Internal Server Error\r\n");
-        }
-
-        head.append("Date: ").append(getServerTime()).append("\r\n");
-        head.append("Connection: close\r\n");
-        head.append("Content-Length: ").append(length).append("\r\n");
-        head.append("Content-Type: ").append(type).append("; charset=UTF-8\r\n");
-        head.append("\r\n");
-
-        return head.toString();
     }
 
 }

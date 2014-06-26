@@ -1,7 +1,7 @@
 package server.com.graderHandler.util;
 
-
 public class GradingFailureException extends Exception {
+
     private static final long serialVersionUID = 1L;
 
     /**

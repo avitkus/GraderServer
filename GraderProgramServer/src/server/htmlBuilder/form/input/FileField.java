@@ -2,22 +2,21 @@ package server.htmlBuilder.form.input;
 
 import java.util.Arrays;
 
-
 public class FileField extends Input implements IFileField {
 
     public FileField() {
-            super();
-            setType("file");
+        super();
+        setType("file");
     }
 
     @Override
     public void setValue(String value) {
-            addAttribute("value", value);
+        addAttribute("value", value);
     }
 
     @Override
     public String getValue() {
-            return getAttribute("value");
+        return getAttribute("value");
     }
 
     @Override

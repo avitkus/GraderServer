@@ -10,14 +10,18 @@ import server.htmlBuilder.util.IColorable;
  *
  */
 public interface IHyperlink extends IBodyElement, IColorable {
-	
-	public void setURL(String url);
-	public void setURL(URL url);
-	public String getURL();
 
-	public void addContent(IBodyElement element);
-	public IBodyElement[] getContents();
-	
-	public void setTarget(LinkTarget target);
-	public LinkTarget getTarget();
+    public void setURL(String url);
+
+    public void setURL(URL url);
+
+    public String getURL();
+
+    public void addContent(IBodyElement element);
+
+    public IBodyElement[] getContents();
+
+    public void setTarget(LinkTarget target);
+
+    public LinkTarget getTarget();
 }

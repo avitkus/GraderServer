@@ -8,6 +8,7 @@ import java.util.Optional;
  */
 @FunctionalInterface
 public interface ECMAScriptGenerator extends ScriptGenerator {
+
     @Override
     default public Optional<String> type() {
         return Optional.of("application/ecmascript");

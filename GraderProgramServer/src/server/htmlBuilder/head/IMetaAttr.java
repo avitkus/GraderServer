@@ -5,6 +5,8 @@ package server.htmlBuilder.head;
  *
  */
 public interface IMetaAttr extends IHeadElement {
-	public String[] getMetaAttributes();
-	public void addMetaAttribute(String name, String value);
+
+    public String[] getMetaAttributes();
+
+    public void addMetaAttribute(String name, String value);
 }

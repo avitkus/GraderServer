@@ -7,6 +7,8 @@ import server.htmlBuilder.IHTMLElement;
  *
  */
 public interface IHead extends IHTMLElement {
-	public IHeadElement[] getElements();
-	public void addElement(IHeadElement element);
+
+    public IHeadElement[] getElements();
+
+    public void addElement(IHeadElement element);
 }

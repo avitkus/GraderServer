@@ -17,25 +17,25 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Calendar;
 import java.util.Objects;
 
-
 public class FileTreeManager {
+
     private static final Path root = Paths.get("graderProgram", "data");
-    
+
     public static void purgeSubmission(Path submission) throws IOException {
         purge(submission);
     }
-    
+
     public static void checkPurgeRoot() throws IOException {
         if (doPurgeRoot()) {
             purge(root);
         }
     }
-    
+
     private static boolean doPurgeRoot() {
         int year = Calendar.getInstance().get(Calendar.YEAR);
         return root.resolve(Integer.toString(year - 1)).toFile().exists();
     }
-    
+
     private static void purge(Path p) throws IOException {
         if (!p.toFile().exists()) {
             return;
@@ -67,7 +67,7 @@ public class FileTreeManager {
             }
         });
     }
-    
+
     public static void backup(Path file, Path copy) throws FileNotFoundException, IOException {
         if (copy.toFile().exists()) {
             Files.delete(copy);
@@ -75,7 +75,7 @@ public class FileTreeManager {
         Files.createFile(copy);
         Files.copy(file, new FileOutputStream(copy.toFile()));
     }
-    
+
     public static void copy(Path source, Path destination) throws IOException {
         Objects.requireNonNull(source, "Source path cannot be null");
         Objects.requireNonNull(destination, "Source destination path cannot be null");
@@ -85,7 +85,7 @@ public class FileTreeManager {
         if (!destination.toFile().exists()) {
             Files.createDirectories(destination);
         }
-        CopyOption[] options = new CopyOption[] {COPY_ATTRIBUTES, REPLACE_EXISTING, NOFOLLOW_LINKS};
+        CopyOption[] options = new CopyOption[]{COPY_ATTRIBUTES, REPLACE_EXISTING, NOFOLLOW_LINKS};
         Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -115,7 +115,7 @@ public class FileTreeManager {
             }
         });
     }
-    
+
     public static void move(Path source, Path destination) throws IOException {
         Objects.requireNonNull(source, "Source path cannot be null");
         Objects.requireNonNull(destination, "Source destination path cannot be null");
@@ -125,7 +125,7 @@ public class FileTreeManager {
         if (!destination.toFile().exists()) {
             Files.createDirectories(destination);
         }
-        CopyOption[] options = new CopyOption[] {COPY_ATTRIBUTES, REPLACE_EXISTING, NOFOLLOW_LINKS};
+        CopyOption[] options = new CopyOption[]{COPY_ATTRIBUTES, REPLACE_EXISTING, NOFOLLOW_LINKS};
         Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -140,7 +140,7 @@ public class FileTreeManager {
             public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
                 Objects.requireNonNull(dir);
                 if (e == null) {
-                Files.deleteIfExists(dir);
+                    Files.deleteIfExists(dir);
                     return FileVisitResult.CONTINUE;
                 } else {
                     // directory iteration failed

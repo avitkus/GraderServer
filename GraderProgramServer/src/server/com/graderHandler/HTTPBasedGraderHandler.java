@@ -41,8 +41,8 @@ import server.utils.ConfigReader;
 import server.utils.IConfigReader;
 import server.utils.ZipReader;
 
-
 public class HTTPBasedGraderHandler extends Thread {
+
     private static final Logger LOG = Logger.getLogger(HTTPBasedGraderHandler.class.getName());
 
     private final int BUFFER_SIZE = 4096;
@@ -67,12 +67,12 @@ public class HTTPBasedGraderHandler extends Thread {
     @Override
     public void run() {
         try (BufferedInputStream bis = new BufferedInputStream(clientSocket.getInputStream())) {
-            
+
         } catch (IOException ex) {
             Logger.getLogger(HTTPBasedGraderHandler.class.getName()).log(Level.SEVERE, null, ex);
         }
         try {
-            
+
             if (isAuthenticated(readVfykey())) {
                 FileTreeManager.checkPurgeRoot();
                 boolean success = readSubmission();
@@ -267,10 +267,10 @@ public class HTTPBasedGraderHandler extends Thread {
 
     private void postToDatabase() throws SQLException, FileNotFoundException, IOException {
         IConfigReader config = new ConfigReader("./config/config.properties");
-        String username = config.getString("database.username");
-        String password = config.getString("database.password");
-        String url = config.getString("database.url");
-        if (config.getBoolean("database.ssl")) {
+        String username = config.getString("database.username").orElseThrow(IllegalArgumentException::new);
+        String password = config.getString("database.password").orElseThrow(IllegalArgumentException::new);
+        String url = config.getString("database.url").orElseThrow(IllegalArgumentException::new);
+        if (config.getBoolean("database.ssl", false).get()) {
             url += "?verifyServerCertificate=true&useSSL=true&requireSSL=true";
         }
 
@@ -362,10 +362,10 @@ public class HTTPBasedGraderHandler extends Thread {
 
         String[] courseParts = course.split("-");
         IConfigReader config = new ConfigReader("./config/config.properties");
-        String username = config.getString("database.username");
-        String password = config.getString("database.password");
-        String url = config.getString("database.url");
-        if (config.getBoolean("database.ssl")) {
+        String username = config.getString("database.username").orElseThrow(IllegalArgumentException::new);
+        String password = config.getString("database.password").orElseThrow(IllegalArgumentException::new);
+        String url = config.getString("database.url").orElseThrow(IllegalArgumentException::new);
+        if (config.getBoolean("database.ssl", false).get()) {
             url += "?verifyServerCertificate=true&useSSL=true&requireSSL=true";
         }
         try (DatabaseReader dr = new DatabaseReader(username, password, "jdbc:" + url)) {

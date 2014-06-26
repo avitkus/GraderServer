@@ -6,6 +6,6 @@ import server.htmlBuilder.body.IBodyElement;
  * @author Andrew Vitkus
  *
  */
-public interface IFormField extends IBodyElement, IFormElement{
+public interface IFormField extends IBodyElement, IFormElement {
 
 }

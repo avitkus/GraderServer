@@ -52,18 +52,18 @@ public class HTTPServer implements Runnable {
         StringBuilder request = new StringBuilder(200);
         request.append(requestLine).append("\r\n");
         String line = br.readLine();
-        while(!line.isEmpty()) {
+        while (!line.isEmpty()) {
             request.append(line).append("\r\n");
             line = br.readLine();
         }
         request.append("\r\n");
         String requestStr = request.toString();
         int lenLoc = requestStr.indexOf("Content-Length:");
-        for(lenLoc += 15; lenLoc < requestStr.length() && !Character.isDigit(requestStr.charAt(lenLoc)); lenLoc ++);
+        for (lenLoc += 15; lenLoc < requestStr.length() && !Character.isDigit(requestStr.charAt(lenLoc)); lenLoc++);
         int bodyLen = Integer.parseInt(requestStr.substring(lenLoc, requestStr.indexOf("\r\n", lenLoc)));
-        while(bodyLen > 0) {
-            request.append((char)br.read());
-            bodyLen --;
+        while (bodyLen > 0) {
+            request.append((char) br.read());
+            bodyLen--;
         }
         requestStr = request.toString();
         if (requestLine != null && requestLine.startsWith("GET")) {
@@ -81,12 +81,12 @@ public class HTTPServer implements Runnable {
             };
         }
     }
-    
+
     private char[] intToCharArr(int i) {
         char[] chars = new char[2];
-        chars[1] = (char)i;
+        chars[1] = (char) i;
         i >>= 16;
-        chars[0] = (char)i;
+        chars[0] = (char) i;
         return chars;
     }
 }

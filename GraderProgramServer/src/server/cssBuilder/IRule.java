@@ -5,11 +5,14 @@ package server.cssBuilder;
  *
  */
 public interface IRule {
-	public void setSelector(String selector);
-	public String getSelector();
-	
-	public void addProperty(String name, String value);
-	public String[][] getProperties();
-	
-	public String getCSS(int indent);
+
+    public void setSelector(String selector);
+
+    public String getSelector();
+
+    public void addProperty(String name, String value);
+
+    public String[][] getProperties();
+
+    public String getCSS(int indent);
 }

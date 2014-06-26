@@ -41,23 +41,23 @@ import server.utils.ConfigReader;
 import server.utils.IConfigReader;
 import server.utils.ZipReader;
 
-
 public class JavaBasedGraderHandler extends Thread {
+
     private static final Logger LOG = Logger.getLogger(JavaBasedGraderHandler.class.getName());
 
     private final int BUFFER_SIZE = 4096;
+    private Path assignmentRoot;
 
     private final SSLSocket clientSocket;
-    private String title;
     private String course;
-    private String onyen;
-    private String uid;
     private String first;
     private String last;
+    private String onyen;
     private String pid;
-    private File zip;
-    private Path assignmentRoot;
     private Path submissionPath;
+    private String title;
+    private String uid;
+    private File zip;
 
     public JavaBasedGraderHandler(SSLSocket clientSocket) {
         this.clientSocket = clientSocket;
@@ -106,104 +106,32 @@ public class JavaBasedGraderHandler extends Thread {
         }
     }
 
-    private String readVfykey() throws IOException {
-        DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
-        return dis.readUTF();
-    }
-
-    private boolean readSubmission() {
-        try {
-            DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
-
-            course = dis.readUTF();
-
-            String assignmentName = dis.readUTF();
-            title = assignmentName;
-
-            int parenStart = title.indexOf('(');
-            int parenEnd = title.indexOf(')');
-            assignmentName = title.substring(parenStart + 1, parenEnd);
-            assignmentName = assignmentName.replace(" ", "");
-
-            String[] courseParts = course.split("-");
-
-            int year = Calendar.getInstance().get(Calendar.YEAR);
-
-            assignmentRoot = assignmentRoot.resolve(Paths.get(Integer.toString(year), courseParts[0].replace(" ", ""), courseParts[1], assignmentName));
-            submissionPath = assignmentRoot.resolve("(" + onyen + ")");
-            Path zipPath = submissionPath.resolve(Paths.get("Submission attachment(s)", assignmentName + ".zip"));
-
-            try {
-                if (zipPath.toFile().exists() && underSubmitLimit()) { // write backup of old zip if allowed
-                    Path zipBackupPath = submissionPath.resolve(Paths.get("Submission attachment(s)", assignmentName + ".zip.bak"));
-                    FileTreeManager.backup(zipPath, zipBackupPath);
-                }
-            } catch (FileNotFoundException e) {
-                LOG.log(Level.FINER, null, e);
-            } catch (IOException | SQLException e) {
-                LOG.log(Level.FINER, null, e);
+    private String getResponse(HttpsURLConnection connection) throws IOException {
+        byte[] bytes = new byte[512];
+        try (BufferedInputStream bis = new BufferedInputStream(connection.getInputStream())) {
+            StringBuilder response = new StringBuilder(30);
+            int in;
+            while ((in = bis.read(bytes)) != -1) {
+                response.append(new String(bytes, 0, in));
             }
-
-            FileTreeManager.purgeSubmission(submissionPath);
-
-            Files.createDirectories(submissionPath.resolve("Submission attachment(s)"));
-            zip = zipPath.toFile();
-
-            zip.createNewFile();
-
-            long fileSize = dis.readLong();
-
-            if (!zip.canWrite()) {
-                return false;
-            }
-            try (FileOutputStream fos = new FileOutputStream(zip)) {
-                byte[] data = new byte[BUFFER_SIZE];
-                int bytesRead = -1;
-                while (fileSize > 0 && (bytesRead = dis.read(data)) != -1) {
-                    fos.write(data, 0, bytesRead);
-                    fileSize -= bytesRead;
-                }
-
-                fos.flush();
-                return true;
-            } catch (IOException e) {
-                LOG.log(Level.FINER, null, e);
-                return false;
-            }
-        } catch (IOException e) {
-            LOG.log(Level.FINER, null, e);
-            return false;
+            return response.toString();
         }
     }
 
-    private void sendResponse(String title) throws FileNotFoundException, IOException {
-        File jsonFile = submissionPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile();
+    private void grade() throws IOException, InterruptedException {
+        int parenStart = title.indexOf('(');
+        int parenEnd = title.indexOf(')');
+        String assignmentName = title.substring(parenStart + 1, parenEnd);
+        assignmentName = assignmentName.replace(" ", "");
+        IGraderSetup setup = new GraderSetup(onyen, assignmentRoot, assignmentName);
+        Path submission = setup.setupFiles();
+        ZipReader.read(zip, submission.toFile());
         try {
-            IResponseWriter responseWriter = new JSONBasedResponseWriter(jsonFile);
-            responseWriter.setAssignmentName(title);
-            replyUTF(responseWriter.getResponseText());
-        } catch (FileNotFoundException e) {
-            LOG.log(Level.WARNING, "Unable to access JSON file at: {0}", jsonFile.getAbsolutePath());
-            throw e;
-        }
-    }
-
-    private void replyUTF(String response) {
-        try {
-            DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
-            dos.writeUTF(response);
-            dos.flush();
-        } catch (IOException e) {
-            LOG.log(Level.FINER, null, e);
-        }
-    }
-
-    private void replyBoolean(boolean response) {
-        try {
-            DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
-            dos.writeBoolean(response);
-            dos.flush();
-        } catch (IOException e) {
+            Future<String> grader = GraderPool.runGrader(setup.getCommandArgs());
+            
+            // log grader program output
+            Arrays.stream(grader.get().split("\n")).forEach((line) -> LOG.log(Level.INFO, "Grader_Program: {0}", line));
+        } catch (ExecutionException e) {
             LOG.log(Level.FINER, null, e);
         }
     }
@@ -217,8 +145,8 @@ public class JavaBasedGraderHandler extends Thread {
         auth.getOutputStream().write(42);
 
         /*
-         * build a map of the auth server's key-value pair response
-         */
+        * build a map of the auth server's key-value pair response
+        */
         String response = getResponse(auth);
         HashMap<String, String> responseMap = new HashMap<>(7);
         Arrays.stream(response.split("\n")).forEach((String responseLine) -> {
@@ -247,24 +175,12 @@ public class JavaBasedGraderHandler extends Thread {
         }
     }
 
-    private String getResponse(HttpsURLConnection connection) throws IOException {
-        byte[] bytes = new byte[512];
-        try (BufferedInputStream bis = new BufferedInputStream(connection.getInputStream())) {
-            StringBuilder response = new StringBuilder(30);
-            int in;
-            while ((in = bis.read(bytes)) != -1) {
-                response.append(new String(bytes, 0, in));
-            }
-            return response.toString();
-        }
-    }
-
     private void postToDatabase() throws SQLException, FileNotFoundException, IOException {
         IConfigReader config = new ConfigReader("./config/config.properties");
-        String username = config.getString("database.username");
-        String password = config.getString("database.password");
-        String url = config.getString("database.url");
-        if (config.getBoolean("database.ssl")) {
+        String username = config.getString("database.username").orElseThrow(IllegalArgumentException::new);
+        String password = config.getString("database.password").orElseThrow(IllegalArgumentException::new);
+        String url = config.getString("database.url").orElseThrow(IllegalArgumentException::new);
+        if (config.getBoolean("database.ssl", false).get()) {
             url += "?verifyServerCertificate=true&useSSL=true&requireSSL=true";
         }
 
@@ -310,20 +226,92 @@ public class JavaBasedGraderHandler extends Thread {
         }
     }
 
-    private void grade() throws IOException, InterruptedException {
-        int parenStart = title.indexOf('(');
-        int parenEnd = title.indexOf(')');
-        String assignmentName = title.substring(parenStart + 1, parenEnd);
-        assignmentName = assignmentName.replace(" ", "");
-        IGraderSetup setup = new GraderSetup(onyen, assignmentRoot, assignmentName);
-        Path submission = setup.setupFiles();
-        ZipReader.read(zip, submission.toFile());
+    private boolean readSubmission() {
         try {
-            Future<String> grader = GraderPool.runGrader(setup.getCommandArgs());
+            DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
+            
+            course = dis.readUTF();
+            
+            String assignmentName = dis.readUTF();
+            title = assignmentName;
+            
+            int parenStart = title.indexOf('(');
+            int parenEnd = title.indexOf(')');
+            assignmentName = title.substring(parenStart + 1, parenEnd);
+            assignmentName = assignmentName.replace(" ", "");
+            
+            String[] courseParts = course.split("-");
+            
+            int year = Calendar.getInstance().get(Calendar.YEAR);
+            
+            assignmentRoot = assignmentRoot.resolve(Paths.get(Integer.toString(year), courseParts[0].replace(" ", ""), courseParts[1], assignmentName));
+            submissionPath = assignmentRoot.resolve("(" + onyen + ")");
+            Path zipPath = submissionPath.resolve(Paths.get("Submission attachment(s)", assignmentName + ".zip"));
+            
+            try {
+                if (zipPath.toFile().exists() && underSubmitLimit()) { // write backup of old zip if allowed
+                    Path zipBackupPath = submissionPath.resolve(Paths.get("Submission attachment(s)", assignmentName + ".zip.bak"));
+                    FileTreeManager.backup(zipPath, zipBackupPath);
+                }
+            } catch (FileNotFoundException e) {
+                LOG.log(Level.FINER, null, e);
+            } catch (IOException | SQLException e) {
+                LOG.log(Level.FINER, null, e);
+            }
+            
+            FileTreeManager.purgeSubmission(submissionPath);
+            
+            Files.createDirectories(submissionPath.resolve("Submission attachment(s)"));
+            zip = zipPath.toFile();
+            
+            zip.createNewFile();
+            
+            long fileSize = dis.readLong();
+            
+            if (!zip.canWrite()) {
+                return false;
+            }
+            try (FileOutputStream fos = new FileOutputStream(zip)) {
+                byte[] data = new byte[BUFFER_SIZE];
+                int bytesRead = -1;
+                while (fileSize > 0 && (bytesRead = dis.read(data)) != -1) {
+                    fos.write(data, 0, bytesRead);
+                    fileSize -= bytesRead;
+                }
+                
+                fos.flush();
+                return true;
+            } catch (IOException e) {
+                LOG.log(Level.FINER, null, e);
+                return false;
+            }
+        } catch (IOException e) {
+            LOG.log(Level.FINER, null, e);
+            return false;
+        }
+    }
 
-            // log grader program output
-            Arrays.stream(grader.get().split("\n")).forEach((line) -> LOG.log(Level.INFO, "Grader_Program: {0}", line));
-        } catch (ExecutionException e) {
+    private String readVfykey() throws IOException {
+        DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
+        return dis.readUTF();
+    }
+
+    private void replyBoolean(boolean response) {
+        try {
+            DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
+            dos.writeBoolean(response);
+            dos.flush();
+        } catch (IOException e) {
+            LOG.log(Level.FINER, null, e);
+        }
+    }
+
+    private void replyUTF(String response) {
+        try {
+            DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
+            dos.writeUTF(response);
+            dos.flush();
+        } catch (IOException e) {
             LOG.log(Level.FINER, null, e);
         }
     }
@@ -349,6 +337,18 @@ public class JavaBasedGraderHandler extends Thread {
         gradeWriter.write(gradingData);
     }
 
+    private void sendResponse(String title) throws FileNotFoundException, IOException {
+        File jsonFile = submissionPath.resolve(Paths.get("Feedback Attachment(s)", "results.json")).toFile();
+        try {
+            IResponseWriter responseWriter = new JSONBasedResponseWriter(jsonFile);
+            responseWriter.setAssignmentName(title);
+            replyUTF(responseWriter.getResponseText());
+        } catch (FileNotFoundException e) {
+            LOG.log(Level.WARNING, "Unable to access JSON file at: {0}", jsonFile.getAbsolutePath());
+            throw e;
+        }
+    }
+
     private boolean underSubmitLimit() throws IOException, SQLException {
         int parenStart = title.indexOf('(');
         int parenEnd = title.indexOf(')');
@@ -356,10 +356,10 @@ public class JavaBasedGraderHandler extends Thread {
 
         String[] courseParts = course.split("-");
         IConfigReader config = new ConfigReader("./config/config.properties");
-        String username = config.getString("database.username");
-        String password = config.getString("database.password");
-        String url = config.getString("database.url");
-        if (config.getBoolean("database.ssl")) {
+        String username = config.getString("database.username").orElseThrow(IllegalArgumentException::new);
+        String password = config.getString("database.password").orElseThrow(IllegalArgumentException::new);
+        String url = config.getString("database.url").orElseThrow(IllegalArgumentException::new);
+        if (config.getBoolean("database.ssl", false).get()) {
             url += "?verifyServerCertificate=true&useSSL=true&requireSSL=true";
         }
         try (DatabaseReader dr = new DatabaseReader(username, password, "jdbc:" + url)) {

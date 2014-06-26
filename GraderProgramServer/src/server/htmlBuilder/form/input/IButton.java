@@ -7,8 +7,12 @@ import server.htmlBuilder.form.input.IInput;
  *
  */
 public interface IButton extends IInput {
-	public void setName(String name);
-	public String getName();
-	public void setValue(String value);
-	public String getValue();
+
+    public void setName(String name);
+
+    public String getName();
+
+    public void setValue(String value);
+
+    public String getValue();
 }

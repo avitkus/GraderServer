@@ -7,11 +7,16 @@ import server.htmlBuilder.IHTMLElement;
  *
  */
 public interface IOptionGroup extends IHTMLElement {
-	public void addOption(IOption option);
-	public IOption[] getOptions();
-	
-	public void setDisabled(boolean disabled);
-	public boolean getDisabled();
-	public void setLabel(String label);
-	public String getLabel();
+
+    public void addOption(IOption option);
+
+    public IOption[] getOptions();
+
+    public void setDisabled(boolean disabled);
+
+    public boolean getDisabled();
+
+    public void setLabel(String label);
+
+    public String getLabel();
 }

@@ -7,8 +7,9 @@ import server.htmlBuilder.form.input.Button;
  *
  */
 public class ResetButton extends Button implements IResetButton {
-	public ResetButton() {
-		super();
-		setType("reset");
-	}
+
+    public ResetButton() {
+        super();
+        setType("reset");
+    }
 }

@@ -5,5 +5,6 @@ package server.htmlBuilder.attributes;
  *
  */
 public enum TextSize {
-	NORMAL, H1, H2, H3, H4, H5, H6
+
+    NORMAL, H1, H2, H3, H4, H5, H6
 }

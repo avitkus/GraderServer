@@ -14,113 +14,114 @@ import server.htmlBuilder.util.StyleManager;
  */
 public class Span implements ISpan {
 
-	private ArrayList<IBodyElement> contents;
-	private IAttributeManager attrs;
-	private IStyleManager styleManager;
-	private String className;
-	public String id;
-	
-	public Span(IBodyElement... elements) {
-		contents = new ArrayList<>();
-		attrs = new AttributeManager();
-		styleManager = new StyleManager();
+    private ArrayList<IBodyElement> contents;
+    private IAttributeManager attrs;
+    private IStyleManager styleManager;
+    private String className;
+    public String id;
 
-		className = "";
-		id = "";
-		for(IBodyElement element : elements) {
-			contents.add(element);
-		}
-	}
-	
-	@Override
-	public String getText(int indent) {
-		StringBuilder html = new StringBuilder();
-		html.append(Offsetter.indent(indent++)).append("<span");
-		if (className != "") {
-			html.append(" class=\"").append(className).append("\"");
-		}
-		if (id != "") {
-			html.append(" id=\"").append(id).append("\"");
-		}
-		html.append(styleManager.getStyleHTML()).append(attrs.getHTML()).append(">\n");
-		for(IBodyElement content : contents) {
-			html.append(content.getText(indent)).append("\n");
-		}
-		html.append(Offsetter.indent(indent - 1)).append("</span>");
-		return html.toString();
-	}
+    public Span(IBodyElement... elements) {
+        contents = new ArrayList<>();
+        attrs = new AttributeManager();
+        styleManager = new StyleManager();
 
-	@Override
-	public String getTagType() {
-		return "span";
-	}
+        className = "";
+        id = "";
+        for (IBodyElement element : elements) {
+            contents.add(element);
+        }
+    }
 
-	@Override
-	public void addContent(IBodyElement content) {
-		contents.add(content);
-	}
+    @Override
+    public String getText(int indent) {
+        StringBuilder html = new StringBuilder();
+        html.append(Offsetter.indent(indent++)).append("<span");
+        if (className != "") {
+            html.append(" class=\"").append(className).append("\"");
+        }
+        if (id != "") {
+            html.append(" id=\"").append(id).append("\"");
+        }
+        html.append(styleManager.getStyleHTML()).append(attrs.getHTML()).append(">\n");
+        for (IBodyElement content : contents) {
+            html.append(content.getText(indent)).append("\n");
+        }
+        html.append(Offsetter.indent(indent - 1)).append("</span>");
+        return html.toString();
+    }
 
-	@Override
-	public IBodyElement[] getContents() {
-		return contents.toArray(new IBodyElement[contents.size()]);
-	}
-	@Override
-	public void setColor(String color) {
-		addStyle(IStyleManager.COLOR, color);
-	}
+    @Override
+    public String getTagType() {
+        return "span";
+    }
 
-	@Override
-	public String getColor() {
-		return styleManager.getStyle(IStyleManager.COLOR);
-	}
+    @Override
+    public void addContent(IBodyElement content) {
+        contents.add(content);
+    }
 
-	@Override
-	public void addStyle(String name, String value) {
-		styleManager.addStyle(name, value);
-	}
+    @Override
+    public IBodyElement[] getContents() {
+        return contents.toArray(new IBodyElement[contents.size()]);
+    }
 
-	@Override
-	public String[][] getStyles() {
-		return styleManager.getStyles();
-	}
+    @Override
+    public void setColor(String color) {
+        addStyle(IStyleManager.COLOR, color);
+    }
 
-	@Override
-	public void addAttribute(String name, String value) {
-		attrs.addAttribute(name, value);
-	}
-	
-	@Override
-	public void removeAttribute(String name) {
-		attrs.removeAttribute(name);
-	}
+    @Override
+    public String getColor() {
+        return styleManager.getStyle(IStyleManager.COLOR);
+    }
 
-	@Override
-	public String getAttribute(String name) {
-		return attrs.getAttribute(name);
-	}
+    @Override
+    public void addStyle(String name, String value) {
+        styleManager.addStyle(name, value);
+    }
 
-	@Override
-	public String[][] getAttributes() {
-		return attrs.getAttributes();
-	}
+    @Override
+    public String[][] getStyles() {
+        return styleManager.getStyles();
+    }
 
-	@Override
-	public void setClassName(String className) {
-		this.className = className;
-	}
+    @Override
+    public void addAttribute(String name, String value) {
+        attrs.addAttribute(name, value);
+    }
 
-	@Override
-	public String getClassName() {
-		return className;
-	}
+    @Override
+    public void removeAttribute(String name) {
+        attrs.removeAttribute(name);
+    }
 
-	@Override
-	public void setID(String id) {
-		this.id = id;
-	}
+    @Override
+    public String getAttribute(String name) {
+        return attrs.getAttribute(name);
+    }
 
-	@Override
-	public String getID() {
-		return id;
-	}
+    @Override
+    public String[][] getAttributes() {
+        return attrs.getAttributes();
+    }
+
+    @Override
+    public void setClassName(String className) {
+        this.className = className;
+    }
+
+    @Override
+    public String getClassName() {
+        return className;
+    }
+
+    @Override
+    public void setID(String id) {
+        this.id = id;
+    }
+
+    @Override
+    public String getID() {
+        return id;
+    }
 }

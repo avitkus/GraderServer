@@ -11,14 +11,21 @@ import java.nio.file.Paths;
  *
  */
 public class GraderSetup implements IGraderSetup {
-    private final String onyen;
+
     private final String assignmentName;
+    private final String onyen;
     private final Path root;
 
     public GraderSetup(String onyen, Path root, String assignmentName) {
         this.onyen = onyen;
         this.root = root;
         this.assignmentName = assignmentName;
+    }
+
+    @Override
+    public String[] getCommandArgs() {
+        IGraderConfigWriter cw = buildConfigWriter();
+        return cw.getCommandArgs();
     }
 
     @Override
@@ -41,12 +48,6 @@ public class GraderSetup implements IGraderSetup {
     public void writeConfig() throws FileNotFoundException, IOException {
         IGraderConfigWriter cw = buildConfigWriter();
         cw.write(Paths.get("graderProgram", "config", "config.properties").toFile());
-    }
-
-    @Override
-    public String[] getCommandArgs() {
-        IGraderConfigWriter cw = buildConfigWriter();
-        return cw.getCommandArgs();
     }
 
     private IGraderConfigWriter buildConfigWriter() {

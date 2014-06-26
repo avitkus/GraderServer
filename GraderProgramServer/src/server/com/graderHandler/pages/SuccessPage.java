@@ -1,5 +1,6 @@
 package server.com.graderHandler.pages;
 
+import java.util.Arrays;
 import server.com.graderHandler.util.INoteData;
 import server.htmlBuilder.HTMLFile;
 import server.htmlBuilder.body.Body;
@@ -36,15 +37,10 @@ import server.htmlBuilder.util.IStyleManager;
  */
 public class SuccessPage extends HTMLFile implements ISuccessPage {
 
-    private String name;
-    private String[][] grading;
-    private INoteData notes;
     private String[] comments;
-
-    @Override
-    public void setAssignmentName(String name) {
-        this.name = name;
-    }
+    private String[][] grading;
+    private String name;
+    private INoteData notes;
 
     @Override
     public String getAssignmentName() {
@@ -52,18 +48,34 @@ public class SuccessPage extends HTMLFile implements ISuccessPage {
     }
 
     @Override
-    public void setGrading(String[][] grading) {
-        this.grading = grading;
+    public void setAssignmentName(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String[] getComments() {
+        return Arrays.copyOf(comments, comments.length);
+    }
+
+    @Override
+    public void setComments(String[] comments) {
+        this.comments = Arrays.copyOf(comments, comments.length);
     }
 
     @Override
     public String[][] getGrading() {
-        return grading;
+        return Arrays.copyOf(grading, grading.length);
     }
 
     @Override
-    public void setNotes(INoteData notes) {
-        this.notes = notes;
+    public void setGrading(String[][] grading) {
+        this.grading = Arrays.copyOf(grading, grading.length);
+    }
+
+    @Override
+    public String getHTML() {
+        buildParts();
+        return super.getHTML();
     }
 
     @Override
@@ -72,30 +84,8 @@ public class SuccessPage extends HTMLFile implements ISuccessPage {
     }
 
     @Override
-    public void setComments(String[] comments) {
-        this.comments = comments;
-    }
-
-    @Override
-    public String[] getComments() {
-        return comments;
-    }
-
-    private void buildParts() {
-        setDoctype(new HTML5Doctype());
-        setHead(buildHead());
-        setBody(buildBody());
-    }
-
-    private IHead buildHead() {
-
-        ITitle title = new Title(name + " Grading");
-
-        IMetaAttr charset = new MetaAttr();
-        charset.addAttribute("charset", "UTF-8");
-
-        IHead head = new Head(title, charset);
-        return head;
+    public void setNotes(INoteData notes) {
+        this.notes = notes;
     }
 
     private IBody buildBody() {
@@ -114,16 +104,26 @@ public class SuccessPage extends HTMLFile implements ISuccessPage {
         body.addElement(new Header("Grading:", 2));
         body.addElement(buildGradeTable());
 
-        if (notes != null || !notes.isEmpty()) {
+        if (notes != null && !notes.isEmpty()) {
             body.addElement(new Header("Notes:", 2));
             body.addElement(buildNoteList());
         }
 
-        if (comments != null || comments.length == 0) {
+        if (comments != null && comments.length == 0) {
             body.addElement(new Header("Comments:", 2));
             body.addElement(buildCommentList());
         }
         return body;
+    }
+
+    private IList buildCommentList() {
+        IUnorderedList list = new UnorderedList();
+        
+        for (String comment : comments) {
+            list.addListItem(new ListItem(new Text(comment)));
+        }
+        
+        return list;
     }
 
     private ITable buildGradeTable() {
@@ -168,14 +168,15 @@ public class SuccessPage extends HTMLFile implements ISuccessPage {
         return table;
     }
 
-    private IList buildCommentList() {
-        IUnorderedList list = new UnorderedList();
-
-        for (String comment : comments) {
-            list.addListItem(new ListItem(new Text(comment)));
-        }
-
-        return list;
+    private IHead buildHead() {
+        
+        ITitle title = new Title(name + " Grading");
+        
+        IMetaAttr charset = new MetaAttr();
+        charset.addAttribute("charset", "UTF-8");
+        
+        IHead head = new Head(title, charset);
+        return head;
     }
 
     private IList buildNoteList() {
@@ -200,10 +201,10 @@ public class SuccessPage extends HTMLFile implements ISuccessPage {
 
         return list;
     }
-    
-    @Override
-    public String getHTML() {
-        buildParts();
-        return super.getHTML();
+
+    private void buildParts() {
+        setDoctype(new HTML5Doctype());
+        setHead(buildHead());
+        setBody(buildBody());
     }
 }

@@ -8,8 +8,9 @@ import java.util.Optional;
  */
 @FunctionalInterface
 public interface ScriptGenerator {
+
     public String getText();
-    
+
     default public Optional<String> type() {
         return Optional.empty();
     }

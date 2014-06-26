@@ -5,5 +5,6 @@ package server.htmlBuilder.attributes;
  *
  */
 public enum TextStyle {
-	PLAIN, BOLD, ITALIC, UNDERLINE, SUPERSCRIPT, SUBSCRIPT, CODE
+
+    PLAIN, BOLD, ITALIC, UNDERLINE, SUPERSCRIPT, SUBSCRIPT, CODE
 }

@@ -12,13 +12,13 @@ public class MultipartRequest implements IRequest {
     private final IRequestHeaders headers;
     private final IRequestBody body;
     private final IRequestLine requestLine;
-    
+
     protected MultipartRequest(IRequestLine requestLine, IRequestHeaders headers, IRequestBody body) {
         this.headers = headers;
         this.body = body;
         this.requestLine = requestLine;
     }
-    
+
     @Override
     public IRequestHeaders getHeaders() {
         return headers;
@@ -28,7 +28,7 @@ public class MultipartRequest implements IRequest {
     public IRequestBody getBody() {
         return body;
     }
-    
+
     @Override
     public IRequestLine getRequestInfo() {
         return requestLine;
@@ -42,12 +42,12 @@ public class MultipartRequest implements IRequest {
     @Override
     public String getRequest() {
         StringBuilder request = new StringBuilder(200);
-        
+
         request.append(requestLine.getRequestLine());
         request.append(headers.getHeader());
         request.append(body.getBody());
-        
+
         return request.toString();
     }
-    
+
 }

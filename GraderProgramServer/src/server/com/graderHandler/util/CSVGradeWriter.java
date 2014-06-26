@@ -10,29 +10,28 @@ import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-
-public class CSVGradeWriter extends GradeWriter implements ICSVGradeWriter{
+public class CSVGradeWriter extends GradeWriter implements ICSVGradeWriter {
 
     public CSVGradeWriter(String assignmentName, Path gradeFile) throws IOException, FileNotFoundException, InterruptedException, ExecutionException {
         super(assignmentName, gradeFile);
     }
-    
+
     public CSVGradeWriter(String assignmentName, String gradeFile) throws IOException, FileNotFoundException, InterruptedException, ExecutionException {
         super(assignmentName, gradeFile);
     }
-    
+
     @Override
-     protected String formatData(IGradingData data) {
+    protected String formatData(IGradingData data) {
         StringBuilder line = new StringBuilder();
         line.append(data.getOnyen()).append(",");
         line.append(data.getOnyen()).append(",");
         line.append(data.getLastName()).append(",");
         line.append(data.getFirstName()).append(",");
-        line.append(data.getScore()/data.getPossible()).append("\r\n");
-        
+        line.append(data.getScore() / data.getPossible()).append("\r\n");
+
         return line.toString();
     }
-    
+
     @Override
     protected void initializeFile() throws FileNotFoundException, IOException, InterruptedException, ExecutionException {
         Future<FileLock> flock = gradeFile.lock();
@@ -41,12 +40,12 @@ public class CSVGradeWriter extends GradeWriter implements ICSVGradeWriter{
         byte[] bytes = header.getBytes("UTF-16");
         ByteBuffer expectedHeader = ByteBuffer.wrap(bytes);
         ByteBuffer fileData = ByteBuffer.allocate(expectedHeader.limit());
-        ((AsynchronousFileChannel)lock.acquiredBy()).read(fileData, 0).get();
+        ((AsynchronousFileChannel) lock.acquiredBy()).read(fileData, 0).get();
         fileData.position(0);
         if (!expectedHeader.equals(fileData)) {
             expectedHeader.position(0);
-            ((AsynchronousFileChannel)lock.acquiredBy()).truncate(0);
-            ((AsynchronousFileChannel)lock.acquiredBy()).write(expectedHeader, 0).get();
+            ((AsynchronousFileChannel) lock.acquiredBy()).truncate(0);
+            ((AsynchronousFileChannel) lock.acquiredBy()).write(expectedHeader, 0).get();
         }
         lock.release();
     }

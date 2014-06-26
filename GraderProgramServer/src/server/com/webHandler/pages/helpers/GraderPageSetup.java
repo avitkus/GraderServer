@@ -6,18 +6,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
-import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import server.com.webHandler.pages.GraderPage;
 import server.com.webHandler.pages.IGraderPage;
 import server.httpTools.request.IRequest;
 import server.httpTools.request.MultipartContent;
 import server.httpTools.request.MultipartRequestBody;
 
-/**
- *
- * @author Andrew Vitkus
- */
 public class GraderPageSetup {
+
+    private static final Logger LOG = Logger.getLogger(GraderPageSetup.class.getName());
 
     public IGraderPage buildGraderPage(IRequest request) {
         IGraderPage page = new GraderPage();
@@ -49,14 +48,14 @@ public class GraderPageSetup {
                             page.setToGradeFile(tmp);
                             try (FileOutputStream fos = new FileOutputStream(tmp.toFile())) {
                                 byte[] data = new byte[BUFFER_SIZE];
-                                int bytesRead = -1;
+                                int bytesRead;
                                 while ((bytesRead = bais.read(data)) != -1) {
                                     fos.write(data, 0, bytesRead);
                                 }
 
                                 fos.flush();
                             } catch (IOException e) {
-                                e.printStackTrace();
+                                LOG.log(Level.WARNING, "Failed to write submission to file");
                             }
 
                             /*
@@ -64,10 +63,10 @@ public class GraderPageSetup {
                              * (FileReader fr = new FileReader(tmp.toFile())) {
                              * while(fr.ready()) {
                              * System.out.print((char)fr.read()); }
-                            }
+                             * }
                              */
                         } catch (IOException ex) {
-                            ex.printStackTrace();
+                            LOG.log(Level.WARNING, "Error in reading submitted file");
                         }
                         break;
                     case "onyen":
@@ -84,6 +83,12 @@ public class GraderPageSetup {
                         break;
                     case "uid":
                         page.setUID(content.getContent());
+                        break;
+                    case "id":
+                        page.setPageUUID(content.getContent());
+                        break;
+                    case "ip":
+                        page.setIP(content.getContent());
                         break;
                 }
             }
