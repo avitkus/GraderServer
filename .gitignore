@@ -3,3 +3,6 @@
 # Package Files #
 *.war
 *.ear
+/GraderProgramServer/nbproject/private/
+/GraderProgramServer/build/
+/GraderProgramServer/nbdist/
