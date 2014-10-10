@@ -13,6 +13,8 @@ import edu.unc.cs.graderServer.gradingProgram.IGraderSetup;
 import edu.unc.cs.graderServer.utils.ConfigReader;
 import edu.unc.cs.graderServer.utils.IConfigReader;
 import edu.unc.cs.graderServer.webHandler.pages.helpers.GradePageManager;
+import edu.unc.cs.graderServer.gradingProgram.GraderFutureHolder;
+import edu.unc.cs.graderServer.graderHandler.util.PendingSubmissionManger;
 import edu.unc.cs.htmlBuilder.IHTMLFile;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -27,6 +29,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import static java.nio.file.StandardOpenOption.APPEND;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -51,9 +54,12 @@ public class InputBasedGraderHandler {
     private String title;
     private String uid;
     private Path userPath;
+    
+    private int runNumber;
 
     public InputBasedGraderHandler() {
         assignmentRoot = Paths.get("graderProgram", "data");
+        runNumber = -1;
     }
 
     public void setAssignment(String name) {
@@ -106,7 +112,17 @@ public class InputBasedGraderHandler {
     }
 
     public IHTMLFile process() throws GradingFailureException {
-        try {
+        boolean doClear = true;
+        try {  
+            while (PendingSubmissionManger.isPending(uid, course, section, title)) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(InputBasedGraderHandler.class.getName()).log(Level.SEVERE, null, ex);
+                    doClear = false;
+                }
+            }
+            PendingSubmissionManger.addSubmission(uid, course, section, title);
             FileTreeManager.checkPurgeRoot();
             boolean success = readSubmission();
             if (success) {
@@ -152,7 +168,9 @@ public class InputBasedGraderHandler {
                 }
                 if (!submissionType.equals("application/json")) {
                     try {
+                        System.out.println("Grade?");
                         grade();
+                        System.out.println("Grade.");
                         jsonPath = userPath.resolve(Paths.get("Feedback Attachment(s)", "results.json"));
                     } catch (InterruptedException e1) {
                         LOG.log(Level.FINER, null, e1);
@@ -202,6 +220,10 @@ public class InputBasedGraderHandler {
             GradingFailureException e = new GradingFailureException();
             e.setStackTrace(ex.getStackTrace());
             throw e;
+        } finally { 
+            if (doClear) {
+                PendingSubmissionManger.removeSubmission(uid, course, section, title);
+            }
         }
     }
 
@@ -243,8 +265,12 @@ public class InputBasedGraderHandler {
         IGraderSetup setup = new GraderSetup(onyen, assignmentRoot, course, assignmentName, firstName, lastName);
         setup.setupFiles();
         try {
-            //LOG.log(Level.INFO, "Args:\n{0}", setup.getCommandArgs());
-            Future<String> grader = GraderPool.runGrader(setup.getCommandArgs());
+            //System.out.println("Args: " + Arrays.toString(setup.getCommandArgs()));
+            GraderFutureHolder graderHolder = GraderPool.runGrader(setup.getCommandArgs());
+            Future<String> grader = graderHolder.getFuture();
+            runNumber = graderHolder.getNumber();
+            GradePageManager.update(pageUUID, runNumber);
+            GradePageManager.refresh(pageUUID);
             grader.get();
             // log grader program output
             //LOG.log(Level.INFO, "Grader_Program: {0}", grader.get());

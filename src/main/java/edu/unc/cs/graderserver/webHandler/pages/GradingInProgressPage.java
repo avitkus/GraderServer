@@ -1,5 +1,6 @@
 package edu.unc.cs.graderServer.webHandler.pages;
 
+import edu.unc.cs.graderServer.gradingProgram.GraderPool;
 import edu.unc.cs.htmlBuilder.HTMLFile;
 import edu.unc.cs.htmlBuilder.attributes.LinkTarget;
 import edu.unc.cs.htmlBuilder.body.Body;
@@ -27,6 +28,17 @@ public class GradingInProgressPage extends HTMLFile implements IGradingInProgres
 
     private static final Logger LOG = Logger.getLogger(GradingInProgressPage.class.getName());
     private String uuid;
+    private int number = -1;
+
+    @Override
+    public int getNumber() {
+        return number;
+    }
+
+    @Override
+    public void setNumber(int number) {
+        this.number = number;
+    }
 
     @Override
     public String getHTML() {
@@ -56,6 +68,14 @@ public class GradingInProgressPage extends HTMLFile implements IGradingInProgres
         content.addContent(new StudentDataNavBar());
         IDivision note = new Division();
         note.setClassName("center");
+        IParagraph waitNote = new Paragraph();
+        int pending = GraderPool.getPendingForRun(number);
+        if (pending > 0) {
+            waitNote.addContent(new Text("There are #" + pending + " submissions before you in the grading queue."));
+        } else if (pending == 0) {
+            waitNote.addContent(new Text("You are now being graded."));
+        }
+        note.addContent(waitNote);
         IParagraph refreshNote = new Paragraph();
         refreshNote.addContent(new Text("This page will reload every 5 seconds to check for grading completion. If it does not, click below."));
         note.addContent(refreshNote);

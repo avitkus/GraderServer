@@ -43,11 +43,11 @@ public class GradePageManager {
      *
      * @return the added page's UUID
      */
-    public static String add(IHTMLFile page, String ip) {
+    public static String add(IHTMLFile page, String ip, int number) {
         Objects.requireNonNull(page, "The added grade page cannot be null.");
         String uuid = UUID.randomUUID().toString();
         synchronized (pageMap) {
-            pageMap.put(uuid, new PageHolder(page, ip));
+            pageMap.put(uuid, new PageHolder(page, ip, number));
         }
         LOG.log(Level.INFO, "Grading page with UUID ''{0}'' has been added.", uuid);
         return uuid;
@@ -151,7 +151,28 @@ public class GradePageManager {
             }
         }
     }
-
+    
+    /**
+     * Associates a new page with a UUID.
+     *
+     * @param key  a UUID
+     * @param number the new grading run number
+     *
+     * @return if a page was updated
+     */
+    public static boolean update(String key, int number) {
+        Objects.requireNonNull(key, "Grade page UUID cannot be null.");
+        synchronized (pageMap) {
+            PageHolder pageHolder = pageMap.get(key);
+            if (pageHolder != null) {
+                pageHolder.number = number;
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+    
     /**
      * Associates a new page with a UUID.
      *
@@ -167,6 +188,30 @@ public class GradePageManager {
             PageHolder pageHolder = pageMap.get(key);
             if (pageHolder != null) {
                 pageHolder.file = page;
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    /**
+     * Associates a new page with a UUID.
+     *
+     * @param key  a UUID
+     * @param page the new page
+     * @param number the run number of this page
+     *
+     * @return if a page was updated
+     */
+    public static boolean update(String key, IHTMLFile page, int number) {
+        Objects.requireNonNull(key, "Grade page UUID cannot be null.");
+        Objects.requireNonNull(page, "The updated grade page cannot be null.");
+        synchronized (pageMap) {
+            PageHolder pageHolder = pageMap.get(key);
+            if (pageHolder != null) {
+                pageHolder.file = page;
+                pageHolder.number = number;
                 return true;
             } else {
                 return false;
@@ -203,17 +248,19 @@ public class GradePageManager {
 
     private static class PageHolder {
 
+        int number;
         IHTMLFile file;
         Instant instant;
         final Optional<String> ip;
 
-        PageHolder(IHTMLFile file, String ip) {
-            this(file, ip, Instant.now());
+        PageHolder(IHTMLFile file, String ip, int number) {
+            this(file, ip, Instant.now(), number);
         }
 
-        PageHolder(IHTMLFile file, String ip, Instant instant) {
+        PageHolder(IHTMLFile file, String ip, Instant instant, int number) {
             this.file = file;
             this.instant = instant;
+            this.number = number;
             if (InetAddressValidator.getInstance().isValid(ip)) {
                 this.ip = Optional.empty();
             } else {

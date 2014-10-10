@@ -414,7 +414,9 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
                         double autoGraded = 0;
                         while (grading.next()) {
                             points += grading.getInt("points");
-                            possible += grading.getInt("possible");
+                            if (!grading.getBoolean("extra_credit")) {
+                                possible += grading.getInt("possible");
+                            }
                             autoGraded += grading.getDouble("auto_graded_percent");
                         }
                         grading.last();

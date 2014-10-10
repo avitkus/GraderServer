@@ -93,6 +93,7 @@ public class GraderConfigWriter implements IGraderConfigWriter {
             //LOG.log(Level.INFO, "grader.controller.useFrameworkGUI = false");
         }
         args.add("--clean-slate");
+        args.add(startOnyen);
 
         return args.toArray(new String[args.size()]);
     }

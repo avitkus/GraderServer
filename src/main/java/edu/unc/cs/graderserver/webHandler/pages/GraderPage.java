@@ -70,7 +70,7 @@ public class GraderPage extends HTMLFile implements IGraderPage {
     public String getHTML() {
         setDoctype(new HTML5Doctype());
         buildParts();
-        setPageUUID(GradePageManager.add(new NotFoundPage(), ip));
+        setPageUUID(GradePageManager.add(new NotFoundPage(), ip, -1));
         InputBasedGraderHandler grader = new InputBasedGraderHandler();
         grader.setAssignment(assignment);
         grader.setCourse(course.split("-")[0]);

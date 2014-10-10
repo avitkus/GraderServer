@@ -11,6 +11,7 @@ import edu.unc.cs.graderServer.utils.ConfigReader;
 import edu.unc.cs.graderServer.utils.IConfigReader;
 import edu.unc.cs.graderServer.utils.URLConnectionHelper;
 import edu.unc.cs.graderServer.utils.ZipReader;
+import edu.unc.cs.graderServer.gradingProgram.GraderFutureHolder;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -114,7 +115,8 @@ public class JavaBasedGraderHandler extends Thread {
         Path submission = setup.setupFiles();
         ZipReader.read(zip, submission.toFile());
         try {
-            Future<String> grader = GraderPool.runGrader(setup.getCommandArgs());
+            GraderFutureHolder graderHolder = GraderPool.runGrader(setup.getCommandArgs());
+            Future<String> grader = graderHolder.getFuture();
 
             // log grader program output
             Arrays.stream(grader.get().split("\n")).forEach((line) -> LOG.log(Level.INFO, "Grader_Program: {0}", line));
