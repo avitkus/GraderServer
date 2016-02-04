@@ -1,5 +1,6 @@
 package edu.unc.cs.graderServer.graderHandler.sql;
 
+import com.sun.istack.internal.logging.Logger;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -13,6 +14,8 @@ import java.util.Properties;
  *
  */
 public class DatabaseWriter implements IDatabaseWriter {
+    
+    Logger LOG = Logger.getLogger(DatabaseWriter.class);
 
     private Connection connection;
     private IDatabaseReader reader;
@@ -122,8 +125,8 @@ public class DatabaseWriter implements IDatabaseWriter {
                 String[] part = grading[i];
                 pstmt.setString(1, part[0]);
                 pstmt.setDouble(2, Double.parseDouble(part[1]));
-                pstmt.setString(3, part[2]);
-                pstmt.setString(4, part[3]);
+                pstmt.setDouble(3, Double.parseDouble(part[2]));
+                pstmt.setDouble(4, Double.parseDouble(part[3]));
                 pstmt.setBoolean(5, extraCredit[i]);
                 pstmt.setInt(6, resultID);
                 pstmt.addBatch();

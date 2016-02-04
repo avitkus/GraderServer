@@ -409,18 +409,18 @@ public class StudentDataLookupPage extends HTMLFile implements IStudentDataLooku
                     row.addDataPart(new TableData(new Text(DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG).format(results.getTimestamp("date")))));
 
                     try (ResultSet grading = dr.getGradingForResult(results.getInt("id"))) {
-                        int points = 0;
-                        int possible = 0;
+                        double points = 0;
+                        double possible = 0;
                         double autoGraded = 0;
                         while (grading.next()) {
-                            points += grading.getInt("points");
+                            points += grading.getDouble("points");
                             if (!grading.getBoolean("extra_credit")) {
-                                possible += grading.getInt("possible");
+                                possible += grading.getDouble("possible");
                             }
                             autoGraded += grading.getDouble("auto_graded_percent");
                         }
                         grading.last();
-                        double score = (double) points / possible;
+                        double score = points / possible;
                         score = Math.round(score * 1000.) / 10.;
                         autoGraded /= grading.getRow();
                         autoGraded = Math.round(autoGraded * 10.) / 10.;
